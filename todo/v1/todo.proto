@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package todo.v1;
+
+option go_package = "./todo/v1;todo";
+
+service TodoService {
+    rpc Add(AddRequest) returns (AddResponse);
+}
+
+message AddRequest {
+    string title = 1;
+}
+
+message AddResponse {
+    string id = 1;
+}
