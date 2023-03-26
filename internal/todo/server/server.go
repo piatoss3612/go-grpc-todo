@@ -3,7 +3,7 @@ package server
 import (
 	context "context"
 
-	todo "github.com/piatoss3612/go-grpc-todo/gen/go/todo/v1"
+	"github.com/piatoss3612/go-grpc-todo/gen/go/todo/v1"
 )
 
 type server struct {
