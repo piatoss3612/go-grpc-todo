@@ -53,8 +53,32 @@
         }
       }
     },
-    "v1Empty": {
-      "type": "object"
+    "v1DeleteAllResponse": {
+      "type": "object",
+      "properties": {
+        "affected": {
+          "type": "string",
+          "format": "int64"
+        },
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "v1DeleteResponse": {
+      "type": "object",
+      "properties": {
+        "affected": {
+          "type": "string",
+          "format": "int64"
+        },
+        "id": {
+          "type": "string"
+        }
+      }
     },
     "v1Priority": {
       "type": "string",
@@ -88,6 +112,33 @@
         "updatedAt": {
           "type": "string",
           "format": "date-time"
+        }
+      }
+    },
+    "v1UpdateManyResponse": {
+      "type": "object",
+      "properties": {
+        "affected": {
+          "type": "string",
+          "format": "int64"
+        },
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "v1UpdateResponse": {
+      "type": "object",
+      "properties": {
+        "affected": {
+          "type": "string",
+          "format": "int64"
+        },
+        "id": {
+          "type": "string"
         }
       }
     }

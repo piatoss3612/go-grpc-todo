@@ -19,8 +19,13 @@ func (s *server) Add(context.Context, *todo.AddRequest) (*todo.AddResponse, erro
 	panic("unimplemented")
 }
 
-// GetById implements todo.TodoServiceServer
-func (s *server) GetById(context.Context, *todo.GetByIdRequest) (*todo.Todo, error) {
+// AddMany implements todo.TodoServiceServer
+func (s *server) AddMany(todo.TodoService_AddManyServer) error {
+	panic("unimplemented")
+}
+
+// Get implements todo.TodoServiceServer
+func (s *server) Get(context.Context, *todo.GetRequest) (*todo.Todo, error) {
 	panic("unimplemented")
 }
 
@@ -30,16 +35,21 @@ func (s *server) GetAll(*todo.Empty, todo.TodoService_GetAllServer) error {
 }
 
 // Update implements todo.TodoServiceServer
-func (s *server) Update(context.Context, *todo.UpdateRequest) (*todo.Empty, error) {
+func (s *server) Update(context.Context, *todo.UpdateRequest) (*todo.UpdateResponse, error) {
 	panic("unimplemented")
 }
 
-// DeleteById implements todo.TodoServiceServer
-func (s *server) DeleteById(context.Context, *todo.DeleteRequest) (*todo.Empty, error) {
+// UpdateMany implements todo.TodoServiceServer
+func (s *server) UpdateMany(todo.TodoService_UpdateManyServer) error {
+	panic("unimplemented")
+}
+
+// Delete implements todo.TodoServiceServer
+func (s *server) Delete(context.Context, *todo.DeleteRequest) (*todo.DeleteResponse, error) {
 	panic("unimplemented")
 }
 
 // DeleteAll implements todo.TodoServiceServer
-func (s *server) DeleteAll(context.Context, *todo.Empty) (*todo.Empty, error) {
+func (s *server) DeleteAll(context.Context, *todo.Empty) (*todo.DeleteAllResponse, error) {
 	panic("unimplemented")
 }

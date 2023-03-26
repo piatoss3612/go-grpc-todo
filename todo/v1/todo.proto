@@ -10,12 +10,12 @@ option go_package = "./todo/v1;todo";
 service TodoService {
     rpc Add(AddRequest) returns (AddResponse);
     rpc AddMany(stream AddRequest) returns (stream AddResponse);
-    rpc GetById(GetByIdRequest) returns (Todo);
+    rpc Get(GetRequest) returns (Todo);
     rpc GetAll(Empty) returns (stream Todo);
-    rpc Update(UpdateRequest) returns (Empty);
-    rpc UpdateMany(stream UpdateRequest) returns (Empty);
-    rpc DeleteById(DeleteRequest) returns (Empty);
-    rpc DeleteAll(Empty) returns (Empty);
+    rpc Update(UpdateRequest) returns (UpdateResponse);
+    rpc UpdateMany(stream UpdateRequest) returns (UpdateManyResponse);
+    rpc Delete(DeleteRequest) returns (DeleteResponse);
+    rpc DeleteAll(Empty) returns (DeleteAllResponse);
 }
 
 message Todo {
@@ -43,7 +43,7 @@ message AddResponse {
     string id = 1;
 }
 
-message GetByIdRequest {
+message GetRequest {
     string id = 1;
 }
 
@@ -54,8 +54,28 @@ message UpdateRequest {
     bool is_done = 4;
 }
 
+message UpdateResponse {
+    int64 affected = 1;
+    string id = 2;
+}
+
+message UpdateManyResponse {
+    int64 affected = 1;
+    repeated string ids = 2;
+}
+
 message DeleteRequest {
     string id = 1;
+}
+
+message DeleteResponse {
+    int64 affected = 1;
+    string id = 2;
+}
+
+message DeleteAllResponse {
+    int64 affected = 1;
+    repeated string ids = 2;
 }
 
 message Empty {}
