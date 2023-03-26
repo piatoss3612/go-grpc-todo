@@ -1,7 +1,7 @@
 package server
 
 import (
-	context "context"
+	"context"
 	"io"
 
 	"github.com/piatoss3612/go-grpc-todo/gen/go/todo/v1"
