@@ -52,6 +52,47 @@
           "type": "string"
         }
       }
+    },
+    "v1Empty": {
+      "type": "object"
+    },
+    "v1Priority": {
+      "type": "string",
+      "enum": [
+        "PRIORITY_UNSPECIFIED",
+        "PRIORITY_LOW",
+        "PRIORITY_MEDIUM",
+        "PRIORITY_HIGH"
+      ],
+      "default": "PRIORITY_UNSPECIFIED"
+    },
+    "v1Todo": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "priority": {
+          "$ref": "#/definitions/v1Priority"
+        },
+        "isDone": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
     }
   }
 }
