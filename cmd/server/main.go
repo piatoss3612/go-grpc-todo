@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/piatoss3612/go-grpc-todo/gen/go/todo/v1"
+	"github.com/piatoss3612/go-grpc-todo/internal/repository/todo/mapper"
 	"github.com/piatoss3612/go-grpc-todo/internal/todo/server"
 	"google.golang.org/grpc"
 )
@@ -23,7 +24,9 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	srv := server.New()
+	repo := mapper.NewTodoRepository()
+
+	srv := server.New(repo)
 	s := grpc.NewServer()
 
 	todo.RegisterTodoServiceServer(s, srv)
