@@ -20,9 +20,11 @@ const _ = grpc.SupportPackageIsVersion7
 
 const (
 	TodoService_Add_FullMethodName        = "/todo.v1.TodoService/Add"
+	TodoService_AddMany_FullMethodName    = "/todo.v1.TodoService/AddMany"
 	TodoService_GetById_FullMethodName    = "/todo.v1.TodoService/GetById"
 	TodoService_GetAll_FullMethodName     = "/todo.v1.TodoService/GetAll"
 	TodoService_Update_FullMethodName     = "/todo.v1.TodoService/Update"
+	TodoService_UpdateMany_FullMethodName = "/todo.v1.TodoService/UpdateMany"
 	TodoService_DeleteById_FullMethodName = "/todo.v1.TodoService/DeleteById"
 	TodoService_DeleteAll_FullMethodName  = "/todo.v1.TodoService/DeleteAll"
 )
@@ -32,9 +34,11 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TodoServiceClient interface {
 	Add(ctx context.Context, in *AddRequest, opts ...grpc.CallOption) (*AddResponse, error)
+	AddMany(ctx context.Context, opts ...grpc.CallOption) (TodoService_AddManyClient, error)
 	GetById(ctx context.Context, in *GetByIdRequest, opts ...grpc.CallOption) (*Todo, error)
 	GetAll(ctx context.Context, in *Empty, opts ...grpc.CallOption) (TodoService_GetAllClient, error)
 	Update(ctx context.Context, in *UpdateRequest, opts ...grpc.CallOption) (*Empty, error)
+	UpdateMany(ctx context.Context, opts ...grpc.CallOption) (TodoService_UpdateManyClient, error)
 	DeleteById(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*Empty, error)
 	DeleteAll(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*Empty, error)
 }
@@ -56,6 +60,37 @@ func (c *todoServiceClient) Add(ctx context.Context, in *AddRequest, opts ...grp
 	return out, nil
 }
 
+func (c *todoServiceClient) AddMany(ctx context.Context, opts ...grpc.CallOption) (TodoService_AddManyClient, error) {
+	stream, err := c.cc.NewStream(ctx, &TodoService_ServiceDesc.Streams[0], TodoService_AddMany_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &todoServiceAddManyClient{stream}
+	return x, nil
+}
+
+type TodoService_AddManyClient interface {
+	Send(*AddRequest) error
+	Recv() (*AddResponse, error)
+	grpc.ClientStream
+}
+
+type todoServiceAddManyClient struct {
+	grpc.ClientStream
+}
+
+func (x *todoServiceAddManyClient) Send(m *AddRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *todoServiceAddManyClient) Recv() (*AddResponse, error) {
+	m := new(AddResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (c *todoServiceClient) GetById(ctx context.Context, in *GetByIdRequest, opts ...grpc.CallOption) (*Todo, error) {
 	out := new(Todo)
 	err := c.cc.Invoke(ctx, TodoService_GetById_FullMethodName, in, out, opts...)
@@ -66,7 +101,7 @@ func (c *todoServiceClient) GetById(ctx context.Context, in *GetByIdRequest, opt
 }
 
 func (c *todoServiceClient) GetAll(ctx context.Context, in *Empty, opts ...grpc.CallOption) (TodoService_GetAllClient, error) {
-	stream, err := c.cc.NewStream(ctx, &TodoService_ServiceDesc.Streams[0], TodoService_GetAll_FullMethodName, opts...)
+	stream, err := c.cc.NewStream(ctx, &TodoService_ServiceDesc.Streams[1], TodoService_GetAll_FullMethodName, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -106,6 +141,40 @@ func (c *todoServiceClient) Update(ctx context.Context, in *UpdateRequest, opts 
 	return out, nil
 }
 
+func (c *todoServiceClient) UpdateMany(ctx context.Context, opts ...grpc.CallOption) (TodoService_UpdateManyClient, error) {
+	stream, err := c.cc.NewStream(ctx, &TodoService_ServiceDesc.Streams[2], TodoService_UpdateMany_FullMethodName, opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &todoServiceUpdateManyClient{stream}
+	return x, nil
+}
+
+type TodoService_UpdateManyClient interface {
+	Send(*UpdateRequest) error
+	CloseAndRecv() (*Empty, error)
+	grpc.ClientStream
+}
+
+type todoServiceUpdateManyClient struct {
+	grpc.ClientStream
+}
+
+func (x *todoServiceUpdateManyClient) Send(m *UpdateRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *todoServiceUpdateManyClient) CloseAndRecv() (*Empty, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(Empty)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func (c *todoServiceClient) DeleteById(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*Empty, error) {
 	out := new(Empty)
 	err := c.cc.Invoke(ctx, TodoService_DeleteById_FullMethodName, in, out, opts...)
@@ -129,9 +198,11 @@ func (c *todoServiceClient) DeleteAll(ctx context.Context, in *Empty, opts ...gr
 // for forward compatibility
 type TodoServiceServer interface {
 	Add(context.Context, *AddRequest) (*AddResponse, error)
+	AddMany(TodoService_AddManyServer) error
 	GetById(context.Context, *GetByIdRequest) (*Todo, error)
 	GetAll(*Empty, TodoService_GetAllServer) error
 	Update(context.Context, *UpdateRequest) (*Empty, error)
+	UpdateMany(TodoService_UpdateManyServer) error
 	DeleteById(context.Context, *DeleteRequest) (*Empty, error)
 	DeleteAll(context.Context, *Empty) (*Empty, error)
 }
@@ -143,6 +214,9 @@ type UnimplementedTodoServiceServer struct {
 func (UnimplementedTodoServiceServer) Add(context.Context, *AddRequest) (*AddResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Add not implemented")
 }
+func (UnimplementedTodoServiceServer) AddMany(TodoService_AddManyServer) error {
+	return status.Errorf(codes.Unimplemented, "method AddMany not implemented")
+}
 func (UnimplementedTodoServiceServer) GetById(context.Context, *GetByIdRequest) (*Todo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetById not implemented")
 }
@@ -151,6 +225,9 @@ func (UnimplementedTodoServiceServer) GetAll(*Empty, TodoService_GetAllServer) e
 }
 func (UnimplementedTodoServiceServer) Update(context.Context, *UpdateRequest) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Update not implemented")
+}
+func (UnimplementedTodoServiceServer) UpdateMany(TodoService_UpdateManyServer) error {
+	return status.Errorf(codes.Unimplemented, "method UpdateMany not implemented")
 }
 func (UnimplementedTodoServiceServer) DeleteById(context.Context, *DeleteRequest) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteById not implemented")
@@ -186,6 +263,32 @@ func _TodoService_Add_Handler(srv interface{}, ctx context.Context, dec func(int
 		return srv.(TodoServiceServer).Add(ctx, req.(*AddRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _TodoService_AddMany_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(TodoServiceServer).AddMany(&todoServiceAddManyServer{stream})
+}
+
+type TodoService_AddManyServer interface {
+	Send(*AddResponse) error
+	Recv() (*AddRequest, error)
+	grpc.ServerStream
+}
+
+type todoServiceAddManyServer struct {
+	grpc.ServerStream
+}
+
+func (x *todoServiceAddManyServer) Send(m *AddResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *todoServiceAddManyServer) Recv() (*AddRequest, error) {
+	m := new(AddRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func _TodoService_GetById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -243,6 +346,32 @@ func _TodoService_Update_Handler(srv interface{}, ctx context.Context, dec func(
 		return srv.(TodoServiceServer).Update(ctx, req.(*UpdateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
+}
+
+func _TodoService_UpdateMany_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(TodoServiceServer).UpdateMany(&todoServiceUpdateManyServer{stream})
+}
+
+type TodoService_UpdateManyServer interface {
+	SendAndClose(*Empty) error
+	Recv() (*UpdateRequest, error)
+	grpc.ServerStream
+}
+
+type todoServiceUpdateManyServer struct {
+	grpc.ServerStream
+}
+
+func (x *todoServiceUpdateManyServer) SendAndClose(m *Empty) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *todoServiceUpdateManyServer) Recv() (*UpdateRequest, error) {
+	m := new(UpdateRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
 }
 
 func _TodoService_DeleteById_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -311,9 +440,20 @@ var TodoService_ServiceDesc = grpc.ServiceDesc{
 	},
 	Streams: []grpc.StreamDesc{
 		{
+			StreamName:    "AddMany",
+			Handler:       _TodoService_AddMany_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+		{
 			StreamName:    "GetAll",
 			Handler:       _TodoService_GetAll_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "UpdateMany",
+			Handler:       _TodoService_UpdateMany_Handler,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "todo/v1/todo.proto",

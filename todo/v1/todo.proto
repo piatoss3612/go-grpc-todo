@@ -9,21 +9,22 @@ option go_package = "./todo/v1;todo";
 
 service TodoService {
     rpc Add(AddRequest) returns (AddResponse);
+    rpc AddMany(stream AddRequest) returns (stream AddResponse);
     rpc GetById(GetByIdRequest) returns (Todo);
     rpc GetAll(Empty) returns (stream Todo);
     rpc Update(UpdateRequest) returns (Empty);
+    rpc UpdateMany(stream UpdateRequest) returns (Empty);
     rpc DeleteById(DeleteRequest) returns (Empty);
     rpc DeleteAll(Empty) returns (Empty);
 }
 
 message Todo {
     string id = 1;
-    string title = 2;
-    string content = 3;
-    Priority priority = 4;
-    bool is_done = 5;
-    google.protobuf.Timestamp created_at = 6;
-    google.protobuf.Timestamp updated_at = 7;
+    string content = 2;
+    Priority priority = 3;
+    bool is_done = 4;
+    google.protobuf.Timestamp created_at = 5;
+    google.protobuf.Timestamp updated_at = 6;
 }
 
 enum Priority {
@@ -34,9 +35,8 @@ enum Priority {
 }
 
 message AddRequest {
-    string title = 1;
-    string content = 2;
-    Priority priority = 3;
+    string content = 1;
+    Priority priority = 2;
 }
 
 message AddResponse {
@@ -47,25 +47,12 @@ message GetByIdRequest {
     string id = 1;
 }
 
-message GetByDateRequest {
-    int64 year = 1;
-    int64 month = 2;
-    int64 day = 3;
-}
-
-message GetByDateResponse {
-    Todo todo = 1;
-}
-
 message UpdateRequest {
     string id = 1;
-    string title = 2;
-    string content = 3;
-    Priority priority = 4;
-    bool is_done = 5;
+    string content = 2;
+    Priority priority = 3;
+    bool is_done = 4;
 }
-
-
 
 message DeleteRequest {
     string id = 1;
