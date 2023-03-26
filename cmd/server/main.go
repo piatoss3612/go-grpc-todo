@@ -27,7 +27,7 @@ func main() {
 	repo := mapper.NewTodoRepository()
 
 	srv := server.New(repo)
-	s := grpc.NewServer()
+	s := grpc.NewServer(grpc.UnaryInterceptor(server.TodoUnaryServerInterceptor))
 
 	todo.RegisterTodoServiceServer(s, srv)
 
