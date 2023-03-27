@@ -8,6 +8,7 @@ import (
 	"log"
 
 	"github.com/piatoss3612/go-grpc-todo/gen/go/todo/v1"
+	"github.com/piatoss3612/go-grpc-todo/internal/todo/client"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -16,7 +17,11 @@ func main() {
 	port := flag.String("p", "80", "server port")
 	flag.Parse()
 
-	conn, err := grpc.Dial(fmt.Sprintf("localhost:%s", *port), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(
+		fmt.Sprintf("localhost:%s", *port),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(client.TodoClientUnaryInterceptor),
+	)
 	if err != nil {
 		log.Fatalf("failed to dial server: %v", err)
 	}
