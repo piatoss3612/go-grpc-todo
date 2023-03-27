@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 
 	"github.com/piatoss3612/go-grpc-todo/gen/go/todo/v1"
 	"github.com/piatoss3612/go-grpc-todo/internal/todo/client"
@@ -21,6 +22,7 @@ func main() {
 		fmt.Sprintf("localhost:%s", *port),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(client.TodoClientUnaryInterceptor),
+		grpc.WithStreamInterceptor(client.TodoClientStreamInterceptor),
 	)
 	if err != nil {
 		log.Fatalf("failed to dial server: %v", err)
@@ -34,6 +36,17 @@ func main() {
 		log.Fatalf("failed to add todo: %v", err)
 	}
 
+	addStream, err := client.AddMany(context.Background())
+	if err != nil {
+		log.Fatalf("failed to add many todos: %v", err)
+	}
+
+	for i := 0; i < 5; i++ {
+		err := addStream.Send(&todo.AddRequest{Content: fmt.Sprintf("test %d", i), Priority: todo.Priority(rand.Intn(4))})
+		if err != nil {
+			log.Fatalf("failed to add many todos: %v", err)
+		}
+	}
 	log.Printf("added todo with id: %s\n", id.Id)
 
 	item, err := client.Get(context.Background(), &todo.GetRequest{Id: id.Id})
@@ -43,13 +56,13 @@ func main() {
 
 	log.Printf("got todo: %v\n", item)
 
-	stream, err := client.GetAll(context.Background(), &todo.Empty{})
+	getStream, err := client.GetAll(context.Background(), &todo.Empty{})
 	if err != nil {
 		log.Fatalf("failed to get all todos: %v", err)
 	}
 
 	for {
-		item, err := stream.Recv()
+		item, err := getStream.Recv()
 		if err != nil {
 			if err == io.EOF {
 				break
