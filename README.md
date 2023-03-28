@@ -69,3 +69,17 @@ plugins:
 ```bash
 make generate
 ```
+
+## Proxy Server
+
+### Start GRPC Server
+
+```
+make server
+```
+
+### Start Proxy Server
+
+```
+make proxy
+```

@@ -16,11 +16,13 @@ import (
 	"github.com/piatoss3612/go-grpc-todo/internal/repository/todo/mapper"
 	"github.com/piatoss3612/go-grpc-todo/internal/todo/server"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
-	port := flag.String("p", "80", "port to listen on")
-	serverType := flag.String("s", "grpc", "server type (http or grpc)")
+	port := flag.String("p", "8080", "port to listen on")
+	serverType := flag.String("s", "grpc", "server type (http or grpc or proxy)")
+	endpoint := flag.String("e", "localhost:8081", "endpoint to connect to")
 	flag.Parse()
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", *port))
@@ -37,8 +39,25 @@ func main() {
 		runHTTPServer(srv, lis)
 	case "grpc":
 		runGRPCServer(srv, lis)
+	case "proxy":
+		runProxyServer(srv, lis, *endpoint)
 	default:
 		log.Fatalf("unknown server type: %s", *serverType)
+	}
+}
+
+func runProxyServer(srv todo.TodoServiceServer, lis net.Listener, endpoint string) {
+	log.Println("Starting proxy server")
+
+	mux := runtime.NewServeMux()
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	err := todo.RegisterTodoServiceHandlerFromEndpoint(context.Background(), mux, endpoint, opts)
+	if err != nil {
+		log.Fatalf("failed to register proxy: %v", err)
+	}
+
+	if err := http.Serve(lis, mux); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("failed to serve: %v", err)
 	}
 }
 
