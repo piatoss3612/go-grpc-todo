@@ -1,14 +1,17 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/piatoss3612/go-grpc-todo/gen/go/todo/v1"
 	"github.com/piatoss3612/go-grpc-todo/internal/repository/todo/mapper"
 	"github.com/piatoss3612/go-grpc-todo/internal/todo/server"
@@ -17,6 +20,7 @@ import (
 
 func main() {
 	port := flag.String("p", "80", "port to listen on")
+	serverType := flag.String("s", "grpc", "server type (http or grpc)")
 	flag.Parse()
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", *port))
@@ -27,6 +31,29 @@ func main() {
 	repo := mapper.NewTodoRepository()
 
 	srv := server.New(repo)
+
+	switch *serverType {
+	case "http":
+		runHTTPServer(srv, lis)
+	case "grpc":
+		runGRPCServer(srv, lis)
+	default:
+		log.Fatalf("unknown server type: %s", *serverType)
+	}
+}
+
+func runHTTPServer(srv todo.TodoServiceServer, lis net.Listener) {
+	log.Println("Starting HTTP server")
+	mux := runtime.NewServeMux()
+	todo.RegisterTodoServiceHandlerServer(context.Background(), mux, srv)
+
+	if err := http.Serve(lis, mux); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("failed to serve: %v", err)
+	}
+}
+
+func runGRPCServer(srv todo.TodoServiceServer, lis net.Listener) {
+	log.Println("Starting gRPC server")
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(server.TodoServerUnaryInterceptor),
 		grpc.StreamInterceptor(server.TodoServerStreamInterceptor),
@@ -43,8 +70,6 @@ func main() {
 		syscall.SIGTERM,
 		syscall.SIGQUIT,
 	)
-
-	log.Printf("Server started on port %s", *port)
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
