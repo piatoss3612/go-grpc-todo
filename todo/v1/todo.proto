@@ -3,19 +3,45 @@ syntax = "proto3";
 package todo.v1;
 
 import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
 
 option go_package = "./todo/v1;todo";
 
-
 service TodoService {
-    rpc Add(AddRequest) returns (AddResponse);
+    rpc Add(AddRequest) returns (AddResponse) {
+        option (google.api.http) = {
+            post: "/v1/todo"
+            body: "*"
+        };
+    };
     rpc AddMany(stream AddRequest) returns (stream AddResponse);
-    rpc Get(GetRequest) returns (Todo);
-    rpc GetAll(Empty) returns (stream Todo);
-    rpc Update(UpdateRequest) returns (UpdateResponse);
+    rpc Get(GetRequest) returns (Todo) {
+        option (google.api.http) = {
+            get: "/v1/todo/{id}"
+        };
+    };
+    rpc GetAll(Empty) returns (stream Todo) {
+        option (google.api.http) = {
+            get: "/v1/todo/all"
+        };
+    }
+    rpc Update(UpdateRequest) returns (UpdateResponse) {
+        option (google.api.http) = {
+            put: "/v1/todo/{id}"
+            body: "*"
+        };
+    };
     rpc UpdateMany(stream UpdateRequest) returns (UpdateManyResponse);
-    rpc Delete(DeleteRequest) returns (DeleteResponse);
-    rpc DeleteAll(Empty) returns (DeleteAllResponse);
+    rpc Delete(DeleteRequest) returns (DeleteResponse) {
+        option (google.api.http) = {
+            delete: "/v1/todo/{id}"
+        };
+    };
+    rpc DeleteAll(Empty) returns (DeleteAllResponse) {
+        option (google.api.http) = {
+            delete: "/v1/todo/all"
+        };
+    };
 }
 
 message Todo {
