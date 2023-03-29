@@ -1,3 +1,14 @@
+SERVER=server
+PROXY=proxy
+
+build: build_server build_proxy
+
+build_server:
+	cd cmd/server && set GOOS=linux && set GOARCH=amd64 && set CGO_ENABLED=0 && go build -o ../../build/${SERVER}/${SERVER} ./
+
+build_proxy:
+	cd cmd/proxy && set GOOS=linux && set GOARCH=amd64 && set CGO_ENABLED=0 && go build -o ../../build/${PROXY}/${PROXY} ./
+
 server:
 	go run ./cmd/server/main.go -p 8080
 

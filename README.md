@@ -83,3 +83,9 @@ make server
 ```
 make proxy
 ```
+
+### Build linux binary
+
+```
+make build
+```
