@@ -3,6 +3,8 @@ module github.com/piatoss3612/go-grpc-todo
 go 1.20
 
 require (
+	github.com/go-chi/chi v1.5.4
+	github.com/go-chi/chi/v5 v5.0.8
 	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
