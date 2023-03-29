@@ -14,9 +14,11 @@ services:
     environment:
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=user
+      - DB_USER=postgres
       - DB_PASSWORD=password
       - DB_NAME=todo
+      - DB_SSLMODE=disable
+      - DB_TIMEZONE=UTC
     depends_on:
       - postgres
   
@@ -36,13 +38,17 @@ services:
       - grpc-server
 
   postgres:
+    container_name: postgres
     image: 'postgres:15.2'
     restart: always
     deploy:
-      mode: global
+      mode: replicas
+      replicas: 1
+    ports:
+      - 5432:5432
     environment:
-      POSTGRES_USER: 'user'
+      POSTGRES_USER: 'postgres'
       POSTGRES_PASSWORD: 'password'
       POSTGRES_DB: 'todo'
     volumes:
-      - ./db/postgres:/var/lib/postgresql/data
+      - ./db-data/postgres/:/var/lib/postgresql/data/
