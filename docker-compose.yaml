@@ -11,6 +11,14 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=user
+      - DB_PASSWORD=password
+      - DB_NAME=todo
+    depends_on:
+      - postgres
   
   proxy-server:
     container_name: proxy-server
@@ -26,3 +34,15 @@ services:
       replicas: 1
     depends_on:
       - grpc-server
+
+  postgres:
+    image: 'postgres:15.2'
+    restart: always
+    deploy:
+      mode: global
+    environment:
+      POSTGRES_USER: 'user'
+      POSTGRES_PASSWORD: 'password'
+      POSTGRES_DB: 'todo'
+    volumes:
+      - ./db/postgres:/var/lib/postgresql/data
