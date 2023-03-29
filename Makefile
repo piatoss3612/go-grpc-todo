@@ -1,13 +1,23 @@
+SHELL=cmd.exe
 SERVER=server
 PROXY=proxy
+
+up_build: build down
+	docker-compose up --build -d
+
+up: 
+	docker-compose up -d
+
+down:
+	docker-compose down
 
 build: build_server build_proxy
 
 build_server:
-	cd cmd/server && set GOOS=linux && set GOARCH=amd64 && set CGO_ENABLED=0 && go build -o ../../build/${SERVER}/${SERVER} ./
+	chdir cmd/${SERVER} && set GOOS=linux&& set GOARCH=amd64&& set CGO_ENABLED=0 && go build -o ../../build/${SERVER}/${SERVER} ./
 
 build_proxy:
-	cd cmd/proxy && set GOOS=linux && set GOARCH=amd64 && set CGO_ENABLED=0 && go build -o ../../build/${PROXY}/${PROXY} ./
+	chdir cmd/${PROXY} && set GOOS=linux&& set GOARCH=amd64&& set CGO_ENABLED=0 && go build -o ../../build/${PROXY}/${PROXY} ./
 
 server:
 	go run ./cmd/server/main.go -p 8080

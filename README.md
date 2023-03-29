@@ -84,8 +84,19 @@ make server
 make proxy
 ```
 
-### Build linux binary
+## Build and run on Docker Compose
 
 ```
-make build
+make up_build
+```
+
+### add todo
+
+```
+$ curl -d '{"content": "hello world","priority": 3}' \ 
+> -H "Content-Type: application/json" -X POST localhost:8080/v1/todo
+```
+
+```
+{"id":"cfd8dbe7-258c-4ab7-b01d-ad8ceaea64c2"}
 ```

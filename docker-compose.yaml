@@ -1,0 +1,28 @@
+version: '3.9'
+
+services:
+  grpc-server:
+    container_name: grpc-server
+    build:
+      context: ./build/server
+      dockerfile: server.Dockerfile
+    command: ./app/server -p 80
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+  
+  proxy-server:
+    container_name: proxy-server
+    build:
+      context: ./build/proxy
+      dockerfile: proxy.Dockerfile
+    command: ./app/proxy -p 80 -e grpc-server:80
+    restart: always
+    ports:
+      - 8080:80
+    deploy:
+      mode: replicated
+      replicas: 1
+    depends_on:
+      - grpc-server
