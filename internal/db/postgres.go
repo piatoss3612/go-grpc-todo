@@ -1,14 +1,14 @@
 package db
 
 import (
-	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	_ "github.com/lib/pq"
 )
 
 const MinimumRetry = 5
@@ -48,20 +48,20 @@ func LoadPostgresDSN() (string, error) {
 		host, port, user, password, dbname, sslmode, timezone), nil
 }
 
-func ConnectPostgres(ctx context.Context, dsn string) (*pgx.Conn, error) {
-	conn, err := pgx.Connect(ctx, dsn)
+func ConnectPostgres(dsn string) (*sql.DB, error) {
+	conn, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := conn.Ping(ctx); err != nil {
+	if err := conn.Ping(); err != nil {
 		return nil, err
 	}
 
 	return conn, nil
 }
 
-func ConnectPostgresRetry(dsn string, try int, backOff time.Duration) *pgx.Conn {
+func ConnectPostgresRetry(dsn string, try int, backOff time.Duration) *sql.DB {
 	if try <= 0 {
 		try = MinimumRetry
 	}
@@ -69,7 +69,7 @@ func ConnectPostgresRetry(dsn string, try int, backOff time.Duration) *pgx.Conn 
 	cnt := 0
 
 	for {
-		conn, err := ConnectPostgres(context.Background(), dsn)
+		conn, err := ConnectPostgres(dsn)
 		if err != nil {
 			cnt++
 		} else {

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -13,7 +12,7 @@ import (
 
 	"github.com/piatoss3612/go-grpc-todo/gen/go/todo/v1"
 	"github.com/piatoss3612/go-grpc-todo/internal/db"
-	"github.com/piatoss3612/go-grpc-todo/internal/repository/todo/mapper"
+	"github.com/piatoss3612/go-grpc-todo/internal/repository/postgres"
 	"github.com/piatoss3612/go-grpc-todo/internal/todo/server"
 	"google.golang.org/grpc"
 )
@@ -31,14 +30,9 @@ func main() {
 	if conn == nil {
 		log.Fatal("failed to connect to database")
 	}
-	defer conn.Close(context.Background())
+	defer conn.Close()
 
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", *port))
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-
-	repo := mapper.NewTodoRepository()
+	repo := postgres.NewTodos(conn)
 
 	srv := server.New(repo)
 
@@ -59,6 +53,11 @@ func main() {
 		syscall.SIGTERM,
 		syscall.SIGQUIT,
 	)
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", *port))
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
 
 	go func() {
 		if err := s.Serve(lis); err != nil {
