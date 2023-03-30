@@ -36,13 +36,14 @@ func (s *server) Add(ctx context.Context, req *todo.AddRequest) (*todo.AddRespon
 	if err != nil {
 		return nil, err
 	}
+	defer func() { tx.Rollback(ctx) }()
 
-	id, err := s.repo.Add(ctx, req.Content, req.Priority, tx)
+	id, err := tx.Add(ctx, req.Content, req.Priority)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -54,12 +55,13 @@ func (s *server) AddMany(stream todo.TodoService_AddManyServer) error {
 	if err != nil {
 		return err
 	}
+	defer func() { tx.Rollback(stream.Context()) }()
 
 	for {
 		req, err := stream.Recv()
 		if err != nil {
 			if err == io.EOF {
-				return tx.Commit()
+				return tx.Commit(stream.Context())
 			}
 			return err
 		}
@@ -72,7 +74,7 @@ func (s *server) AddMany(stream todo.TodoService_AddManyServer) error {
 			req.Priority = 0
 		}
 
-		id, err := s.repo.Add(stream.Context(), req.Content, req.Priority, tx)
+		id, err := tx.Add(stream.Context(), req.Content, req.Priority)
 		if err != nil {
 			return err
 		}
@@ -107,13 +109,14 @@ func (s *server) Update(ctx context.Context, req *todo.UpdateRequest) (*todo.Upd
 	if err != nil {
 		return nil, err
 	}
+	defer func() { _ = tx.Rollback(ctx) }()
 
-	affected, err := s.repo.Update(ctx, req.Id, req.Content, req.Priority, req.IsDone, tx)
+	affected, err := tx.Update(ctx, req.Id, req.Content, req.Priority, req.IsDone)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -125,9 +128,9 @@ func (s *server) UpdateMany(stream todo.TodoService_UpdateManyServer) error {
 	if err != nil {
 		return err
 	}
+	defer func() { tx.Rollback(stream.Context()) }()
 
 	var totalAffected int64 = 0
-	var ids []string
 
 	for {
 		req, err := stream.Recv()
@@ -138,18 +141,15 @@ func (s *server) UpdateMany(stream todo.TodoService_UpdateManyServer) error {
 			return err
 		}
 
-		affected, err := s.repo.Update(stream.Context(), req.Id, req.Content, req.Priority, req.IsDone, tx)
+		affected, err := tx.Update(stream.Context(), req.Id, req.Content, req.Priority, req.IsDone)
 		if err != nil {
 			return err
 		}
 
-		if affected > 0 {
-			totalAffected += affected
-			ids = append(ids, req.Id)
-		}
+		totalAffected += affected
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(stream.Context()); err != nil {
 		return err
 	}
 
@@ -161,13 +161,14 @@ func (s *server) Delete(ctx context.Context, req *todo.DeleteRequest) (*todo.Del
 	if err != nil {
 		return nil, err
 	}
+	defer func() { _ = tx.Rollback(ctx) }()
 
-	affected, err := s.repo.Delete(ctx, req.Id, tx)
+	affected, err := tx.Delete(ctx, req.Id)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
@@ -179,13 +180,14 @@ func (s *server) DeleteAll(ctx context.Context, _ *todo.Empty) (*todo.DeleteAllR
 	if err != nil {
 		return nil, err
 	}
+	defer func() { _ = tx.Rollback(ctx) }()
 
-	affected, err := s.repo.DeleteAll(ctx, tx)
+	affected, err := tx.DeleteAll(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 

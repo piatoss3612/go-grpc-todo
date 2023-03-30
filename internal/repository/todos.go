@@ -3,16 +3,37 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/piatoss3612/go-grpc-todo/gen/go/todo/v1"
 )
 
+var (
+	ErrTodoNotCreated = errors.New("todo not created")
+)
+
+type TodosTxOptions struct {
+	IsolationLevel sql.IsolationLevel
+	ReadOnly       bool
+}
+
+type TodosTx interface {
+	Add(ctx context.Context, content string, prior todo.Priority) (string, error)
+	Get(ctx context.Context, id string) (*todo.Todo, error)
+	GetAll(ctx context.Context) ([]*todo.Todo, error)
+	Update(ctx context.Context, id string, content string, prior todo.Priority, done bool) (int64, error)
+	Delete(ctx context.Context, id string) (int64, error)
+	DeleteAll(ctx context.Context) (int64, error)
+	Commit(ctx context.Context) error
+	Rollback(ctx context.Context) error
+}
+
 type Todos interface {
-	BeginTx(ctx context.Context, opts ...*sql.TxOptions) (*sql.Tx, error)
-	Add(ctx context.Context, content string, prior todo.Priority, txs ...*sql.Tx) (string, error)
-	Get(ctx context.Context, id string, txs ...*sql.Tx) (*todo.Todo, error)
-	GetAll(ctx context.Context, txs ...*sql.Tx) ([]*todo.Todo, error)
-	Update(ctx context.Context, id string, content string, prior todo.Priority, done bool, txs ...*sql.Tx) (int64, error)
-	Delete(ctx context.Context, id string, txs ...*sql.Tx) (int64, error)
-	DeleteAll(ctx context.Context, txs ...*sql.Tx) (int64, error)
+	BeginTx(ctx context.Context, opts ...TodosTxOptions) (TodosTx, error)
+	Add(ctx context.Context, content string, prior todo.Priority) (string, error)
+	Get(ctx context.Context, id string) (*todo.Todo, error)
+	GetAll(ctx context.Context) ([]*todo.Todo, error)
+	Update(ctx context.Context, id string, content string, prior todo.Priority, done bool) (int64, error)
+	Delete(ctx context.Context, id string) (int64, error)
+	DeleteAll(ctx context.Context) (int64, error)
 }
