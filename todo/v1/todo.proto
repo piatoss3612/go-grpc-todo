@@ -101,7 +101,6 @@ message DeleteResponse {
 
 message DeleteAllResponse {
     int64 affected = 1;
-    repeated string ids = 2;
 }
 
 message Empty {}

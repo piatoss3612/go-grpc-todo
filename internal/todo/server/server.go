@@ -171,7 +171,7 @@ func (s *server) Delete(ctx context.Context, req *todo.DeleteRequest) (*todo.Del
 		return nil, err
 	}
 
-	return &todo.DeleteResponse{Affected: affected}, nil
+	return &todo.DeleteResponse{Affected: affected, Id: req.Id}, nil
 }
 
 func (s *server) DeleteAll(ctx context.Context, _ *todo.Empty) (*todo.DeleteAllResponse, error) {

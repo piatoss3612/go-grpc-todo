@@ -259,12 +259,6 @@
         "affected": {
           "type": "string",
           "format": "int64"
-        },
-        "ids": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
         }
       }
     },
