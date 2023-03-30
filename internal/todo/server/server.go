@@ -117,7 +117,7 @@ func (s *server) Update(ctx context.Context, req *todo.UpdateRequest) (*todo.Upd
 		return nil, err
 	}
 
-	return &todo.UpdateResponse{Affected: affected, Id: req.Id}, nil
+	return &todo.UpdateResponse{Affected: affected}, nil
 }
 
 func (s *server) UpdateMany(stream todo.TodoService_UpdateManyServer) error {
@@ -153,7 +153,7 @@ func (s *server) UpdateMany(stream todo.TodoService_UpdateManyServer) error {
 		return err
 	}
 
-	return stream.SendAndClose(&todo.UpdateManyResponse{Affected: totalAffected, Ids: ids})
+	return stream.SendAndClose(&todo.UpdateManyResponse{Affected: totalAffected})
 }
 
 func (s *server) Delete(ctx context.Context, req *todo.DeleteRequest) (*todo.DeleteResponse, error) {
@@ -171,7 +171,7 @@ func (s *server) Delete(ctx context.Context, req *todo.DeleteRequest) (*todo.Del
 		return nil, err
 	}
 
-	return &todo.DeleteResponse{Affected: affected, Id: req.Id}, nil
+	return &todo.DeleteResponse{Affected: affected}, nil
 }
 
 func (s *server) DeleteAll(ctx context.Context, _ *todo.Empty) (*todo.DeleteAllResponse, error) {

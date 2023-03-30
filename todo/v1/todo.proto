@@ -82,12 +82,10 @@ message UpdateRequest {
 
 message UpdateResponse {
     int64 affected = 1;
-    string id = 2;
 }
 
 message UpdateManyResponse {
     int64 affected = 1;
-    repeated string ids = 2;
 }
 
 message DeleteRequest {
@@ -96,7 +94,6 @@ message DeleteRequest {
 
 message DeleteResponse {
     int64 affected = 1;
-    string id = 2;
 }
 
 message DeleteAllResponse {
