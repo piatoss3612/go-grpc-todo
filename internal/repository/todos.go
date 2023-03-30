@@ -2,12 +2,13 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/piatoss3612/go-grpc-todo/gen/go/todo/v1"
 )
 
-type TodoRepository interface {
-	StartTransaction(ctx context.Context) (context.Context, func(ctx context.Context), func(ctx context.Context) error, error)
+type Todos interface {
+	BeginTx(ctx context.Context, opts ...*sql.TxOptions) (*sql.Tx, error)
 	Add(ctx context.Context, content string, prior todo.Priority) (string, error)
 	Get(ctx context.Context, id string) (*todo.Todo, error)
 	GetAll(ctx context.Context) ([]*todo.Todo, error)
