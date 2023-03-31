@@ -8,51 +8,95 @@ import (
 	"google.golang.org/grpc"
 )
 
-func TodoServerUnaryInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	md := extractMetadata(ctx)
+const (
+	UserAgentKey        = "user-agent"
+	GatewayUserAgentKey = "grpcgateway-user-agent"
+	XForwardedForKey    = "x-forwarded-for"
+	ReceivedMsgCountKey = "received-msg-count"
+	SentMsgCountKey     = "sent-msg-count"
+)
 
-	slog.Info("Request received", "method", info.FullMethod, "user-agent", md.userAgent, "client-ip", md.clientIp)
-
-	resp, err := handler(ctx, req)
-	if err != nil {
-		slog.Error("Request failed", "method", info.FullMethod, "error", err)
-		return resp, err
-	}
-
-	slog.Info("Send a message", "type", fmt.Sprintf("%T", resp))
-	return resp, nil
+type TodoServerInterceptor interface {
+	Unary() grpc.UnaryServerInterceptor
+	Stream() grpc.StreamServerInterceptor
 }
 
-func TodoServerStreamInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-	md := extractMetadata(ss.Context())
+type todoServerInterceptor struct {
+	l *slog.Logger
+}
 
-	slog.Info("Request received", "method", info.FullMethod, "user-agent", md.userAgent, "client-ip", md.clientIp)
-
-	wss := newWrappedServerStream(ss)
-
-	err := handler(srv, wss)
-	if err != nil {
-		slog.Error("Request failed", "method", info.FullMethod, "error", err)
-		return err
+func NewTodoServerInterceptor(l *slog.Logger) TodoServerInterceptor {
+	return &todoServerInterceptor{
+		l: l,
 	}
+}
 
-	return nil
+func (i *todoServerInterceptor) Unary() grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
+		md := extractMetadata(ctx)
+
+		i.l.Info("Request received", "method", info.FullMethod, "user-agent", md.userAgent, "client-ip", md.clientIp)
+
+		resp, err = handler(ctx, req)
+		if err != nil {
+			i.l.Error("Request failed", "method", info.FullMethod, "error", err)
+		} else {
+			i.l.Info("Sent a message", "type", fmt.Sprintf("%T", resp))
+		}
+
+		return
+	}
+}
+
+func (i *todoServerInterceptor) Stream() grpc.StreamServerInterceptor {
+	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+		md := extractMetadata(ss.Context())
+
+		i.l.Info("Request received", "method", info.FullMethod, "user-agent", md.userAgent, "client-ip", md.clientIp)
+
+		wss := newWrappedServerStream(ss)
+
+		err := handler(srv, wss)
+		if err != nil {
+			i.l.Error("Request failed", "method", info.FullMethod, "error", err)
+			return err
+		}
+
+		ctx := wss.Context()
+		rmc, smc := ctx.Value(ReceivedMsgCountKey).(int), ctx.Value(SentMsgCountKey).(int)
+
+		i.l.Info("Request handled successfully", ReceivedMsgCountKey, rmc, SentMsgCountKey, smc)
+
+		return nil
+	}
 }
 
 type wrappedServerStream struct {
 	grpc.ServerStream
+	recvMsgCount    int
+	sentMsgCountKey int
 }
 
 func newWrappedServerStream(ss grpc.ServerStream) grpc.ServerStream {
-	return &wrappedServerStream{ss}
+	return &wrappedServerStream{
+		ServerStream:    ss,
+		recvMsgCount:    0,
+		sentMsgCountKey: 0,
+	}
 }
 
 func (w *wrappedServerStream) SendMsg(m interface{}) error {
-	slog.Info("Send a message", "type", fmt.Sprintf("%T", m))
+	w.sentMsgCountKey++
 	return w.ServerStream.SendMsg(m)
 }
 
 func (w *wrappedServerStream) RecvMsg(m interface{}) error {
-	slog.Info("Receive a message", "type", fmt.Sprintf("%T", m))
+	w.recvMsgCount++
 	return w.ServerStream.RecvMsg(m)
+}
+
+func (w *wrappedServerStream) Context() context.Context {
+	ctx := context.WithValue(w.ServerStream.Context(), ReceivedMsgCountKey, w.recvMsgCount)
+	ctx = context.WithValue(ctx, SentMsgCountKey, w.sentMsgCountKey)
+	return ctx
 }

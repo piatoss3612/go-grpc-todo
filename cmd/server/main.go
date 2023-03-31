@@ -14,12 +14,15 @@ import (
 	"github.com/piatoss3612/go-grpc-todo/internal/db"
 	"github.com/piatoss3612/go-grpc-todo/internal/repository/postgres"
 	"github.com/piatoss3612/go-grpc-todo/internal/todo/server"
+	"golang.org/x/exp/slog"
 	"google.golang.org/grpc"
 )
 
 func main() {
 	port := flag.String("p", "80", "port to listen on")
 	flag.Parse()
+
+	l := slog.New(slog.NewJSONHandler(os.Stdout)).With("service", "todo-grpc-server")
 
 	dsn, err := db.LoadPostgresDSN()
 	if err != nil {
@@ -36,10 +39,12 @@ func main() {
 
 	srv := server.New(repo)
 
-	log.Println("Starting gRPC server")
+	l.Info("Starting Todo gRPC Server")
+
+	interceptor := server.NewTodoServerInterceptor(l)
 	s := grpc.NewServer(
-		grpc.UnaryInterceptor(server.TodoServerUnaryInterceptor),
-		grpc.StreamInterceptor(server.TodoServerStreamInterceptor),
+		grpc.UnaryInterceptor(interceptor.Unary()),
+		grpc.StreamInterceptor(interceptor.Stream()),
 	)
 
 	todo.RegisterTodoServiceServer(s, srv)
@@ -74,5 +79,5 @@ func main() {
 
 	<-stop
 
-	log.Println("Server stopped")
+	l.Info("Server stopped")
 }

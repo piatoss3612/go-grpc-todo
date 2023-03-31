@@ -16,7 +16,7 @@ func extractMetadata(ctx context.Context) todoServerMetadata {
 	var userAgent, clientIp string
 
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
-		if userAgents := md.Get("user-agent"); len(userAgents) > 0 {
+		if userAgents := md.Get(UserAgentKey); len(userAgents) > 0 {
 			userAgent = userAgents[0]
 		}
 
@@ -25,11 +25,11 @@ func extractMetadata(ctx context.Context) todoServerMetadata {
 			clientIp = peer.Addr.String()
 		}
 
-		if gwUserAgents := md.Get("grpcgateway-user-agent"); len(gwUserAgents) > 0 {
+		if gwUserAgents := md.Get(GatewayUserAgentKey); len(gwUserAgents) > 0 {
 			userAgent = gwUserAgents[0]
 		}
 
-		if clientIps := md.Get("x-forwarded-for"); len(clientIps) > 0 {
+		if clientIps := md.Get(XForwardedForKey); len(clientIps) > 0 {
 			clientIp = clientIps[0]
 		}
 	}
