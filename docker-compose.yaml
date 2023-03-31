@@ -8,6 +8,8 @@ services:
       dockerfile: server.Dockerfile
     command: ./app/server -p 80
     restart: always
+    ports:
+      - 8081:80
     deploy:
       mode: replicated
       replicas: 1

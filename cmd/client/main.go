@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	port := flag.String("p", "80", "server port")
+	port := flag.String("p", "8081", "server port")
 	flag.Parse()
 
 	conn, err := grpc.Dial(
@@ -34,4 +34,18 @@ func main() {
 		log.Fatalf("failed to add todo: %v", err)
 	}
 	log.Printf("added todo with id: %v", id)
+
+	stream, err := client.AddMany(context.Background())
+	if err != nil {
+		log.Fatalf("failed to add many: %v", err)
+	}
+
+	for i := 0; i < 10; i++ {
+		err := stream.Send(&todo.AddRequest{Content: fmt.Sprintf("test %d", i), Priority: 1})
+		if err != nil {
+			log.Fatalf("failed to send add request: %v", err)
+		}
+	}
+
+	stream.CloseSend()
 }
