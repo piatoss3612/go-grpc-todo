@@ -90,10 +90,15 @@ func (p *postgresTodos) GetAll(ctx context.Context) ([]*todo.Todo, error) {
 
 	for rows.Next() {
 		var t todo.Todo
-		err := rows.Scan(&t.Id, &t.Content, &t.Priority, &t.IsDone, &t.CreatedAt, &t.UpdatedAt)
+		var createdAt, updatedAt time.Time
+
+		err := rows.Scan(&t.Id, &t.Content, &t.Priority, &t.IsDone, &createdAt, &updatedAt)
 		if err != nil {
 			return nil, err
 		}
+
+		t.CreatedAt = timestamppb.New(createdAt)
+		t.UpdatedAt = timestamppb.New(updatedAt)
 		todos = append(todos, &t)
 	}
 	return todos, nil

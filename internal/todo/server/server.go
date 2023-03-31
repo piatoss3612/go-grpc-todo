@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/google/uuid"
 	"github.com/piatoss3612/go-grpc-todo/gen/go/todo/v1"
 	"github.com/piatoss3612/go-grpc-todo/internal/repository"
 	"google.golang.org/grpc/codes"
@@ -14,7 +15,6 @@ import (
 
 type server struct {
 	repo repository.Todos
-	// TODO: add logger
 }
 
 func New(repo repository.Todos) todo.TodoServiceServer {
@@ -88,6 +88,11 @@ func (s *server) AddMany(stream todo.TodoService_AddManyServer) error {
 }
 
 func (s *server) Get(ctx context.Context, req *todo.GetRequest) (*todo.Todo, error) {
+	_, err := uuid.Parse(req.Id)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid id: %s", req.Id)
+	}
+
 	todos, err := s.repo.Get(ctx, req.Id)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get todo: %v", err)
@@ -117,6 +122,11 @@ func (s *server) Update(ctx context.Context, req *todo.UpdateRequest) (*todo.Upd
 		return nil, status.Errorf(codes.Internal, "failed to begin transaction: %v", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+
+	_, err = uuid.Parse(req.Id)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid id: %s", req.Id)
+	}
 
 	affected, err := tx.Update(ctx, req.Id, req.Content, req.Priority, req.IsDone)
 	if err != nil {
@@ -148,6 +158,11 @@ func (s *server) UpdateMany(stream todo.TodoService_UpdateManyServer) error {
 			return err
 		}
 
+		_, err = uuid.Parse(req.Id)
+		if err != nil {
+			return status.Errorf(codes.InvalidArgument, "invalid id: %s", req.Id)
+		}
+
 		affected, err := tx.Update(stream.Context(), req.Id, req.Content, req.Priority, req.IsDone)
 		if err != nil {
 			return status.Errorf(codes.Internal, "failed to update todo: %v", err)
@@ -169,6 +184,11 @@ func (s *server) Delete(ctx context.Context, req *todo.DeleteRequest) (*todo.Del
 		return nil, status.Errorf(codes.Internal, "failed to begin transaction: %v", err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+
+	_, err = uuid.Parse(req.Id)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "invalid id: %s", req.Id)
+	}
 
 	affected, err := tx.Delete(ctx, req.Id)
 	if err != nil {
