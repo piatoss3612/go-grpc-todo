@@ -4,11 +4,11 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
 	_ "github.com/lib/pq"
+	"golang.org/x/exp/slog"
 )
 
 const MinimumRetry = 5
@@ -73,7 +73,7 @@ func ConnectPostgresRetry(dsn string, try int, backOff time.Duration) *sql.DB {
 		if err != nil {
 			cnt++
 		} else {
-			log.Printf("Connected to database after %d retries", cnt)
+			slog.Info("Connected to database", "retry-count", cnt)
 			return conn
 		}
 

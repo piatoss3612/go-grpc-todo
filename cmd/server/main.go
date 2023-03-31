@@ -22,7 +22,13 @@ func main() {
 	port := flag.String("p", "80", "port to listen on")
 	flag.Parse()
 
-	l := slog.New(slog.NewJSONHandler(os.Stdout)).With("service", "todo-grpc-server")
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout)).With("service", "todo-grpc-server"))
+
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("Recovered from panic", "panic", r)
+		}
+	}()
 
 	dsn, err := db.LoadPostgresDSN()
 	if err != nil {
@@ -33,15 +39,15 @@ func main() {
 	if conn == nil {
 		log.Fatal("failed to connect to database")
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	repo := postgres.NewTodos(conn)
 
 	srv := server.New(repo)
 
-	l.Info("Starting Todo gRPC Server")
+	slog.Info("Starting Todo gRPC Server")
 
-	interceptor := server.NewTodoServerInterceptor(l)
+	interceptor := server.NewTodoServerInterceptor()
 	s := grpc.NewServer(
 		grpc.UnaryInterceptor(interceptor.Unary()),
 		grpc.StreamInterceptor(interceptor.Stream()),
@@ -79,5 +85,5 @@ func main() {
 
 	<-stop
 
-	l.Info("Server stopped")
+	slog.Info("Server stopped")
 }
