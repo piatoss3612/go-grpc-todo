@@ -86,7 +86,16 @@ func (px *postgresTodosTx) Update(ctx context.Context, id string, content string
 		return 0, err
 	}
 
-	return res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	if affected != 1 {
+		return 0, repository.ErrTodoNotUpdated
+	}
+
+	return affected, nil
 }
 
 func (px *postgresTodosTx) Delete(ctx context.Context, id string) (int64, error) {
@@ -97,7 +106,16 @@ func (px *postgresTodosTx) Delete(ctx context.Context, id string) (int64, error)
 		return 0, err
 	}
 
-	return res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	if affected != 1 {
+		return 0, repository.ErrTodoNotDeleted
+	}
+
+	return affected, nil
 }
 
 func (px *postgresTodosTx) DeleteAll(ctx context.Context) (int64, error) {
@@ -108,7 +126,16 @@ func (px *postgresTodosTx) DeleteAll(ctx context.Context) (int64, error) {
 		return 0, err
 	}
 
-	return res.RowsAffected()
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+
+	if affected < 1 {
+		return 0, repository.ErrTodoNotDeleted
+	}
+
+	return affected, nil
 }
 
 func (px *postgresTodosTx) Commit(_ context.Context) error {

@@ -10,6 +10,8 @@ import (
 
 var (
 	ErrTodoNotCreated = errors.New("todo not created")
+	ErrTodoNotUpdated = errors.New("todo not updated")
+	ErrTodoNotDeleted = errors.New("todo not deleted")
 )
 
 type TodosTxOptions struct {
