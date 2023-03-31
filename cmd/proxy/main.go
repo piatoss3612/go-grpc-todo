@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/piatoss3612/go-grpc-todo/gen/go/todo/v1"
+	"golang.org/x/exp/slog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
@@ -22,6 +23,8 @@ func main() {
 	port := flag.String("p", "8080", "port to listen on")
 	endpoint := flag.String("e", "localhost:8081", "endpoint to connect to")
 	flag.Parse()
+
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout)).With("service", "todo-proxy-server"))
 
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
@@ -39,7 +42,7 @@ func main() {
 		Handler: r,
 	}
 
-	log.Println("Starting proxy server")
+	slog.Info("Starting proxy server")
 
 	stop := make(chan struct{})
 
@@ -59,7 +62,7 @@ func main() {
 
 	go func() {
 		<-gracefulShutdown
-		log.Println("Shutting down server...")
+		slog.Info("Shutting down server...")
 
 		if err := server.Shutdown(context.Background()); err != nil {
 			log.Fatalf("failed to shutdown server: %v", err)
@@ -71,5 +74,5 @@ func main() {
 
 	<-stop
 
-	log.Println("Server stopped")
+	slog.Info("Server stopped")
 }
