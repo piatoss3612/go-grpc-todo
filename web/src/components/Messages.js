@@ -4,7 +4,7 @@ import { ResponseMessage } from "./ResponseMessage";
 
 export const Messages = () => {
   return (
-    <Row>
+    <Row className="mt-3">
       <RequestMessage />
       <ResponseMessage />
     </Row>
