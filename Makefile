@@ -28,5 +28,8 @@ proxy:
 client:
 	go run ./cmd/client/main.go -p 8080
 
+front:
+	chdir web && npm run start
+
 generate:
 	docker run --volume $(PWD):/workspace --workdir /workspace bufbuild/buf generate
