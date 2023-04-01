@@ -5,6 +5,7 @@ import (
 
 	"golang.org/x/exp/slog"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -34,7 +35,12 @@ func (i *todoServerInterceptor) Unary() grpc.UnaryServerInterceptor {
 
 		resp, err = handler(ctx, req)
 		if err != nil {
-			slog.Error("Request failed", "method", info.FullMethod, "error", err)
+			s, ok := status.FromError(err)
+			if ok {
+				slog.Error("Request failed", "method", info.FullMethod, "error", s.Message(), "code", s.Code())
+			} else {
+				slog.Error("Request failed", "method", info.FullMethod, "error", err)
+			}
 		} else {
 			slog.Info("Request handled successfully", "method", info.FullMethod)
 		}
@@ -53,7 +59,12 @@ func (i *todoServerInterceptor) Stream() grpc.StreamServerInterceptor {
 
 		err := handler(srv, wss)
 		if err != nil {
-			slog.Error("Request failed", "method", info.FullMethod, "error", err)
+			s, ok := status.FromError(err)
+			if ok {
+				slog.Error("Request failed", "method", info.FullMethod, "error", s.Message(), "code", s.Code())
+			} else {
+				slog.Error("Request failed", "method", info.FullMethod, "error", err)
+			}
 			return err
 		}
 
