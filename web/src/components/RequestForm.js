@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
+import { TodoContext } from "../context/context";
 
 const requestTypes = ["gRPC", "http"];
 const endpoints = ["v1/todo", "v1/todo/all"];
@@ -12,6 +13,13 @@ const priorities = [
 ];
 
 export const RequestForm = () => {
+  const {
+    todoHttpGetRequest,
+    todoHttpAddRequest,
+    todoHttpUpdateRequest,
+    todoHttpDeleteRequest,
+  } = useContext(TodoContext);
+
   const [requestType, setRequestType] = useState(requestTypes[0]);
   const [streamRepeat, setStreamRepeat] = useState(0);
   const [method, setMethod] = useState(Methods[0]);
@@ -55,11 +63,44 @@ export const RequestForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("submit");
-    setRequestType(requestTypes[0]);
+
+    try {
+      switch (requestType) {
+        case "gRPC":
+          break;
+        case "http":
+          switch (method) {
+            case "GET":
+              todoHttpGetRequest(endpoint, todoId);
+              break;
+            case "POST":
+              todoHttpAddRequest(endpoint, todoContent, todoPriority);
+              break;
+            case "PUT":
+              todoHttpUpdateRequest(
+                endpoint,
+                todoId,
+                todoContent,
+                todoPriority,
+                todoCompleted
+              );
+              break;
+            case "DELETE":
+              todoHttpDeleteRequest(endpoint, todoId);
+              break;
+            default:
+              throw new Error("Invalid method");
+          }
+          break;
+        default:
+          throw new Error("Invalid request type");
+      }
+    } catch (error) {
+      console.log(error);
+      return;
+    }
+
     setStreamRepeat(0);
-    setMethod(Methods[0]);
-    setEndpoint(endpoints[0]);
     setTodoId("");
     setTodoContent("");
     setTodoPriority(priorities[0].value);
