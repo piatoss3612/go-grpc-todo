@@ -3,11 +3,19 @@ import { createContext, useState } from "react";
 export const TodoContext = createContext();
 
 export const TodoProvider = ({ children }) => {
-  const [requestType, setRequestType] = useState("");
+  const requestType = "http";
+  const endpoints = ["v1/todo", "v1/todo/all"];
+  const methods = ["GET", "POST", "PUT", "DELETE"];
+  const priorities = [
+    { value: 1, label: "LOW" },
+    { value: 2, label: "MEDIUM" },
+    { value: 3, label: "HIGH" },
+  ];
+
   const [request, setRequest] = useState("Nothing sent yet");
   const [response, setResponse] = useState("Nothing received yet");
 
-  const httpHost = "http://localhost:8080";
+  const httpBaseUrl = "http://localhost:8080";
 
   const todoHttpAddRequest = async (endpoint, content, priority) => {
     const request = {
@@ -22,7 +30,7 @@ export const TodoProvider = ({ children }) => {
     };
 
     try {
-      const response = await fetch(`${httpHost}/${endpoint}`, request);
+      const response = await fetch(`${httpBaseUrl}/${endpoint}`, request);
       const data = await response.json();
       setRequest(JSON.stringify(request));
       setResponse(JSON.stringify(data));
@@ -36,8 +44,8 @@ export const TodoProvider = ({ children }) => {
     const request = id ? `id: ${id}` : "all";
     try {
       const url = id
-        ? `${httpHost}/${endpoint}/${id}`
-        : `${httpHost}/${endpoint}`;
+        ? `${httpBaseUrl}/${endpoint}/${id}`
+        : `${httpBaseUrl}/${endpoint}`;
       const response = await fetch(url);
       const data = await response.text();
       setRequest(request);
@@ -69,8 +77,8 @@ export const TodoProvider = ({ children }) => {
     };
 
     const url = id
-      ? `${httpHost}/${endpoint}/${id}`
-      : `${httpHost}/${endpoint}`;
+      ? `${httpBaseUrl}/${endpoint}/${id}`
+      : `${httpBaseUrl}/${endpoint}`;
 
     try {
       const response = await fetch(url, request);
@@ -87,8 +95,8 @@ export const TodoProvider = ({ children }) => {
     const request = id ? `id: ${id}` : "all";
     try {
       const url = id
-        ? `${httpHost}/${endpoint}/${id}`
-        : `${httpHost}/${endpoint}`;
+        ? `${httpBaseUrl}/${endpoint}/${id}`
+        : `${httpBaseUrl}/${endpoint}`;
       const response = await fetch(url, { method: "DELETE" });
       const data = await response.json();
       setRequest(request);
@@ -103,7 +111,9 @@ export const TodoProvider = ({ children }) => {
     <TodoContext.Provider
       value={{
         requestType,
-        setRequestType,
+        methods,
+        endpoints,
+        priorities,
         request,
         setRequest,
         response,

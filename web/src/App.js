@@ -1,11 +1,19 @@
 import { Container } from "react-bootstrap";
-import { RequestGenerator } from "./components/RequestGenerator";
 import { Messages } from "./components/Messages";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
+import { RequestForm } from "./components/RequestForm";
 
 const App = () => {
   return (
     <Container>
-      <RequestGenerator />
+      <Row>
+        <Col>
+          <h1 className="mt-5">Todo gRPC Test</h1>
+          <hr />
+          <RequestForm />
+        </Col>
+      </Row>
       <Messages />
     </Container>
   );

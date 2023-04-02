@@ -3,39 +3,24 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import { TodoContext } from "../context/context";
 
-const requestTypes = ["gRPC", "http"];
-const endpoints = ["v1/todo", "v1/todo/all"];
-const Methods = ["GET", "POST", "PUT", "DELETE"];
-const priorities = [
-  { value: 1, label: "LOW" },
-  { value: 2, label: "MEDIUM" },
-  { value: 3, label: "HIGH" },
-];
-
 export const RequestForm = () => {
   const {
+    requestType,
+    methods,
+    endpoints,
+    priorities,
     todoHttpGetRequest,
     todoHttpAddRequest,
     todoHttpUpdateRequest,
     todoHttpDeleteRequest,
   } = useContext(TodoContext);
 
-  const [requestType, setRequestType] = useState(requestTypes[0]);
-  const [streamRepeat, setStreamRepeat] = useState(0);
-  const [method, setMethod] = useState(Methods[0]);
+  const [method, setMethod] = useState(methods[0]);
   const [endpoint, setEndpoint] = useState(endpoints[0]);
   const [todoId, setTodoId] = useState("");
   const [todoContent, setTodoContent] = useState("");
   const [todoPriority, setTodoPriority] = useState(priorities[0].value);
   const [todoCompleted, setTodoCompleted] = useState(false);
-
-  const handleRequestTypeChange = (e) => {
-    setRequestType(e.target.value);
-  };
-
-  const handleStreamRepeatChange = (e) => {
-    setStreamRepeat(e.target.value);
-  };
 
   const handleMethodChange = (e) => {
     setMethod(e.target.value);
@@ -66,8 +51,6 @@ export const RequestForm = () => {
 
     try {
       switch (requestType) {
-        case "gRPC":
-          break;
         case "http":
           switch (method) {
             case "GET":
@@ -89,54 +72,32 @@ export const RequestForm = () => {
               todoHttpDeleteRequest(endpoint, todoId);
               break;
             default:
-              throw new Error("Invalid method");
+              throw new Error("Unsupported method");
           }
           break;
         default:
-          throw new Error("Invalid request type");
+          throw new Error("Unsupported request type");
       }
     } catch (error) {
       console.log(error);
       return;
     }
 
-    setStreamRepeat(0);
     setTodoId("");
     setTodoContent("");
     setTodoPriority(priorities[0].value);
-    setTodoCompleted(false);
   };
 
   return (
     <Form onSubmit={handleSubmit}>
       <Form.Group controlId="formRequestType" className="mb-2">
         <Form.Label>Request Type</Form.Label>
-        <Form.Control
-          as="select"
-          value={requestType}
-          onChange={handleRequestTypeChange}
-        >
-          {requestTypes.map((requestType) => (
-            <option key={requestType}>{requestType}</option>
-          ))}
-        </Form.Control>
+        <Form.Control type={"text"} value={requestType} disabled></Form.Control>
       </Form.Group>
-      {requestType === "gRPC" && (
-        <Form.Group controlId="formStreamRepeat" className="mb-2">
-          <Form.Label>Stream Repeat</Form.Label>
-          <Form.Range
-            step={1}
-            min={0}
-            max={10}
-            value={streamRepeat}
-            onChange={handleStreamRepeatChange}
-          />
-        </Form.Group>
-      )}
       <Form.Group controlId="formMethod" className="mb-2">
         <Form.Label>Method</Form.Label>
         <Form.Control as="select" value={method} onChange={handleMethodChange}>
-          {Methods.map((method) => (
+          {methods.map((method) => (
             <option key={method}>{method}</option>
           ))}
         </Form.Control>
