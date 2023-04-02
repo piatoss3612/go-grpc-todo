@@ -8,8 +8,6 @@ services:
       dockerfile: server.Dockerfile
     command: ./app/server -p 80
     restart: always
-    ports:
-      - 8081:80
     deploy:
       mode: replicated
       replicas: 1
@@ -38,6 +36,20 @@ services:
       replicas: 1
     depends_on:
       - grpc-server
+  
+  
+  web:
+    container_name: web
+    build:
+      context: .
+      dockerfile: ./build/web/Dockerfile
+    restart: always
+    ports:
+      - 3000:3000
+    deploy:
+      mode: replicated
+      replicas: 1
+  
 
   postgres:
     container_name: postgres
@@ -46,8 +58,6 @@ services:
     deploy:
       mode: replicas
       replicas: 1
-    ports:
-      - 5432:5432
     environment:
       POSTGRES_USER: 'postgres'
       POSTGRES_PASSWORD: 'password'
