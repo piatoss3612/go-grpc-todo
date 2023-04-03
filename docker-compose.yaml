@@ -29,8 +29,6 @@ services:
       dockerfile: proxy.Dockerfile
     command: ./app/proxy -p 80 -e grpc-server:80
     restart: always
-    ports:
-      - 8080:80
     deploy:
       mode: replicated
       replicas: 1
@@ -49,7 +47,6 @@ services:
     deploy:
       mode: replicated
       replicas: 1
-  
 
   postgres:
     container_name: postgres

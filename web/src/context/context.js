@@ -15,7 +15,7 @@ export const TodoProvider = ({ children }) => {
   const [request, setRequest] = useState("Nothing sent yet");
   const [response, setResponse] = useState("Nothing received yet");
 
-  const httpBaseUrl = "http://localhost:8080";
+  const todoRequestBaseUrl = "http://localhost:80/api";
 
   const todoHttpAddRequest = async (endpoint, content, priority) => {
     const request = {
@@ -30,7 +30,10 @@ export const TodoProvider = ({ children }) => {
     };
 
     try {
-      const response = await fetch(`${httpBaseUrl}/${endpoint}`, request);
+      const response = await fetch(
+        `${todoRequestBaseUrl}/${endpoint}`,
+        request
+      );
       const data = await response.json();
       setRequest(JSON.stringify(request));
       setResponse(JSON.stringify(data));
@@ -44,8 +47,8 @@ export const TodoProvider = ({ children }) => {
     const request = id ? `id: ${id}` : "all";
     try {
       const url = id
-        ? `${httpBaseUrl}/${endpoint}/${id}`
-        : `${httpBaseUrl}/${endpoint}`;
+        ? `${todoRequestBaseUrl}/${endpoint}/${id}`
+        : `${todoRequestBaseUrl}/${endpoint}`;
       const response = await fetch(url);
       const data = await response.text();
       setRequest(request);
@@ -77,8 +80,8 @@ export const TodoProvider = ({ children }) => {
     };
 
     const url = id
-      ? `${httpBaseUrl}/${endpoint}/${id}`
-      : `${httpBaseUrl}/${endpoint}`;
+      ? `${todoRequestBaseUrl}/${endpoint}/${id}`
+      : `${todoRequestBaseUrl}/${endpoint}`;
 
     try {
       const response = await fetch(url, request);
@@ -95,8 +98,8 @@ export const TodoProvider = ({ children }) => {
     const request = id ? `id: ${id}` : "all";
     try {
       const url = id
-        ? `${httpBaseUrl}/${endpoint}/${id}`
-        : `${httpBaseUrl}/${endpoint}`;
+        ? `${todoRequestBaseUrl}/${endpoint}/${id}`
+        : `${todoRequestBaseUrl}/${endpoint}`;
       const response = await fetch(url, { method: "DELETE" });
       const data = await response.json();
       setRequest(request);
