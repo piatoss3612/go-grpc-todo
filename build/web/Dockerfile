@@ -1,6 +1,6 @@
 # ==== CONFIGURE =====
 # Use a Node 16 base image
-FROM node:16-alpine 
+FROM node:16-alpine As builder
 # Set the working directory to /app inside the container
 WORKDIR /app
 # Copy app files
@@ -10,10 +10,16 @@ COPY ./web .
 RUN npm ci 
 # Build the app
 RUN npm run build
-# ==== RUN =======
+
+# Bundle the app with nginx
+FROM nginx:1.23.4-alpine
 # Set the env to "development"
 ENV NODE_ENV development
-# Expose the port on which the app will be running (3000 is the default that `serve` uses)
-EXPOSE 3000
-# Start the app
-CMD [ "npx", "serve", "build" ]
+# Copy the build output from the builder stage
+COPY --from=builder /app/build /usr/share/nginx/html
+# Copy the nginx config
+COPY ./build/web/nginx.conf /etc/nginx/conf.d/default.conf
+# Expose port 80
+EXPOSE 80
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
