@@ -23,6 +23,9 @@ export const RequestForm = () => {
   const [todoCompleted, setTodoCompleted] = useState(false);
 
   const handleMethodChange = (e) => {
+    if (e.target.value === "POST" || e.target.value === "PUT") {
+      setEndpoint(endpoints[0]);
+    }
     setMethod(e.target.value);
   };
 
@@ -110,9 +113,10 @@ export const RequestForm = () => {
             value={endpoint}
             onChange={handleEndpointChange}
           >
-            {endpoints.map((endpoint) => (
-              <option key={endpoint}>{endpoint}</option>
-            ))}
+            <option>{endpoints[0]}</option>
+            <option disabled={method === "POST" || method === "PUT"}>
+              {endpoints[1]}
+            </option>
           </Form.Control>
         </Form.Group>
       )}
