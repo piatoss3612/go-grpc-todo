@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/piatoss3612/go-grpc-todo/gen/go/todo/v1"
 	"github.com/piatoss3612/go-grpc-todo/internal/repository"
+	"github.com/piatoss3612/go-grpc-todo/proto/gen/go/todo/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

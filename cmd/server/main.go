@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/piatoss3612/go-grpc-todo/gen/go/todo/v1"
+	"github.com/piatoss3612/go-grpc-todo/proto/gen/go/todo/v1"
 	"github.com/piatoss3612/go-grpc-todo/internal/db"
 	"github.com/piatoss3612/go-grpc-todo/internal/repository/postgres"
 	"github.com/piatoss3612/go-grpc-todo/internal/todo/server"

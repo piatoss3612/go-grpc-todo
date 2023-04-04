@@ -14,7 +14,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/piatoss3612/go-grpc-todo/gen/go/todo/v1"
+	"github.com/piatoss3612/go-grpc-todo/proto/gen/go/todo/v1"
 	"golang.org/x/exp/slog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
