@@ -5,8 +5,3 @@ type EventProducer interface {
 	DeliveryReport() (<-chan string, <-chan error)
 	Close() error
 }
-
-type EventConsumer interface {
-	Consume(topics []string, sig <-chan bool) (<-chan Event, <-chan error, error)
-	Close() error
-}
