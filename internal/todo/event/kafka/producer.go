@@ -7,7 +7,7 @@ import (
 	"github.com/piatoss3612/go-grpc-todo/internal/broker"
 )
 
-type kafkaEventProducer struct {
+type todoEventProducer struct {
 	p *kafka.Producer
 	d chan kafka.Event
 	m chan string
@@ -15,7 +15,7 @@ type kafkaEventProducer struct {
 }
 
 func NewEventProducer(p *kafka.Producer) broker.EventProducer {
-	return &kafkaEventProducer{
+	return &todoEventProducer{
 		p: p,
 		d: make(chan kafka.Event, 10000),
 		m: make(chan string, 10000),
@@ -23,19 +23,19 @@ func NewEventProducer(p *kafka.Producer) broker.EventProducer {
 	}
 }
 
-func (k *kafkaEventProducer) Produce(event broker.Event) error {
+func (t *todoEventProducer) Produce(event broker.Event) error {
 	topic := event.Topic().String()
 
-	return k.p.Produce(&kafka.Message{
+	return t.p.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{
 			Topic:     &topic,
 			Partition: kafka.PartitionAny,
 		},
 		Value: event.Value(),
-	}, k.d)
+	}, t.d)
 }
 
-func (k *kafkaEventProducer) DeliveryReport() (<-chan string, <-chan error) {
+func (k *todoEventProducer) DeliveryReport() (<-chan string, <-chan error) {
 	go func() {
 		for e := range k.d {
 			switch ev := e.(type) {
@@ -53,7 +53,7 @@ func (k *kafkaEventProducer) DeliveryReport() (<-chan string, <-chan error) {
 	return k.m, k.e
 }
 
-func (k *kafkaEventProducer) Close() error {
+func (k *todoEventProducer) Close() error {
 	k.p.Close()
 	close(k.d)
 	close(k.e)
