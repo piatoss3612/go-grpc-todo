@@ -1,7 +1,6 @@
 package kafka
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -24,11 +23,7 @@ func NewEventProducer(p *kafka.Producer) broker.EventProducer {
 	}
 }
 
-func (k *kafkaEventProducer) Produce(_ context.Context, event broker.Event) error {
-	if event == nil {
-		return fmt.Errorf("event is nil")
-	}
-
+func (k *kafkaEventProducer) Produce(event broker.Event) error {
 	topic := event.Topic().String()
 
 	return k.p.Produce(&kafka.Message{
