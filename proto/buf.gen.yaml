@@ -15,4 +15,4 @@ plugins:
       - require_unimplemented_servers=false
 
   - plugin: buf.build/grpc-ecosystem/openapiv2
-    out: api
+    out: gen/api

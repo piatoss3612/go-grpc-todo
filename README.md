@@ -5,20 +5,25 @@
 ### Initialize Buf module
 
 ```powershell
-$ docker run --volume "$(pwd):/workspace" --workdir /workspace bufbuild/buf mod init
-```
-
-### Generate code
-
-```powershell
-$ docker run --volume "$(pwd):/workspace" --workdir /workspace bufbuild/buf generate
+$ docker run --volume "$(pwd)/proto:/workspace" --workdir /workspace bufbuild/buf mod init
 ```
 
 ### Update dependencies
 
 ```powershell
-$ docker run --volume "$(pwd):/workspace" --workdir /workspace bufbuild/buf mod update
+$ docker run --volume "$(pwd)/proto:/workspace" --workdir /workspace bufbuild/buf mod update
 ```
+
+### Generate code
+
+```powershell
+$ docker run --volume "$(pwd)/proto:/workspace" --workdir /workspace bufbuild/buf generate
+```
+
+```bash
+make buf
+```
+
 
 ## 🐳 Docker Compose
 

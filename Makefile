@@ -31,5 +31,5 @@ client:
 front:
 	chdir web && npm run start
 
-generate:
-	docker run --volume $(PWD):/workspace --workdir /workspace bufbuild/buf generate
+buf:
+	docker run --volume $(PWD)/proto:/workspace --workdir /workspace bufbuild/buf generate
