@@ -2,21 +2,35 @@ package broker
 
 import "fmt"
 
-type EventType string
+type EventTopic string
+
+func (e EventTopic) String() string {
+	return string(e)
+}
+
+func (e EventTopic) Validate() error {
+	switch e {
+	case EventTopicTodoCreated, EventTopicTodoUpdated, EventTopicTodoDeleted, EventTopicTodoError:
+		return nil
+	default:
+		return fmt.Errorf("invalid event type: %s", e)
+	}
+}
 
 const (
-	EventTypeTodoCreated EventType = "todo.created"
-	EventTypeTodoUpdated EventType = "todo.updated"
-	EventTypeTodoDeleted EventType = "todo.deleted"
-	EventTypeTodoError   EventType = "todo.error"
+	EventTopicTodoCreated EventTopic = "todo.created"
+	EventTopicTodoUpdated EventTopic = "todo.updated"
+	EventTopicTodoDeleted EventTopic = "todo.deleted"
+	EventTopicTodoError   EventTopic = "todo.error"
 )
 
 type Event interface {
-	Type() EventType
+	Topic() EventTopic
+	Value() []byte
 	String() string
 }
 
-func NewTodoCreatedEvent(id string) TodoCreatedEvent {
+func NewTodoCreatedEvent(id string) Event {
 	return TodoCreatedEvent{ID: id}
 }
 
@@ -24,8 +38,12 @@ type TodoCreatedEvent struct {
 	ID string
 }
 
-func (e TodoCreatedEvent) Type() EventType {
-	return EventTypeTodoCreated
+func (e TodoCreatedEvent) Topic() EventTopic {
+	return EventTopicTodoCreated
+}
+
+func (e TodoCreatedEvent) Value() []byte {
+	return []byte(e.String())
 }
 
 func (e TodoCreatedEvent) String() string {
@@ -36,8 +54,16 @@ type TodoUpdatedEvent struct {
 	ID string
 }
 
-func (e TodoUpdatedEvent) Type() EventType {
-	return EventTypeTodoUpdated
+func NewTodoUpdatedEvent(id string) Event {
+	return TodoUpdatedEvent{ID: id}
+}
+
+func (e TodoUpdatedEvent) Topic() EventTopic {
+	return EventTopicTodoUpdated
+}
+
+func (e TodoUpdatedEvent) Value() []byte {
+	return []byte(e.String())
 }
 
 func (e TodoUpdatedEvent) String() string {
@@ -48,8 +74,16 @@ type TodoDeletedEvent struct {
 	ID string
 }
 
-func (e TodoDeletedEvent) Type() EventType {
-	return EventTypeTodoDeleted
+func NewTodoDeletedEvent(id string) Event {
+	return TodoDeletedEvent{ID: id}
+}
+
+func (e TodoDeletedEvent) Value() []byte {
+	return []byte(e.String())
+}
+
+func (e TodoDeletedEvent) Topic() EventTopic {
+	return EventTopicTodoDeleted
 }
 
 func (e TodoDeletedEvent) String() string {
@@ -60,12 +94,16 @@ type TodoErrorEvent struct {
 	errMsg string
 }
 
-func NewTodoErrorEvent(errMsg string) TodoErrorEvent {
+func NewTodoErrorEvent(errMsg string) Event {
 	return TodoErrorEvent{errMsg: errMsg}
 }
 
-func (e TodoErrorEvent) Type() EventType {
-	return EventTypeTodoError
+func (e TodoErrorEvent) Topic() EventTopic {
+	return EventTopicTodoError
+}
+
+func (e TodoErrorEvent) Value() []byte {
+	return []byte(e.String())
 }
 
 func (e TodoErrorEvent) String() string {
