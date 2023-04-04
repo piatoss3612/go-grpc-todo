@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/piatoss3612/go-grpc-todo/proto/gen/go/todo/v1"
 	"github.com/piatoss3612/go-grpc-todo/internal/db"
 	"github.com/piatoss3612/go-grpc-todo/internal/repository/postgres"
 	"github.com/piatoss3612/go-grpc-todo/internal/todo/server"
+	"github.com/piatoss3612/go-grpc-todo/proto/gen/go/todo/v1"
 	"golang.org/x/exp/slog"
 	"google.golang.org/grpc"
 )
@@ -45,15 +45,16 @@ func main() {
 
 	srv := server.New(repo)
 
+	itc := server.NewInterceptor(srv)
+
 	slog.Info("Starting Todo gRPC Server")
 
-	interceptor := server.NewTodoServerInterceptor()
 	s := grpc.NewServer(
-		grpc.UnaryInterceptor(interceptor.Unary()),
-		grpc.StreamInterceptor(interceptor.Stream()),
+		grpc.UnaryInterceptor(itc.Unary()),
+		grpc.StreamInterceptor(itc.Stream()),
 	)
 
-	todo.RegisterTodoServiceServer(s, srv)
+	todo.RegisterTodoServiceServer(s, itc)
 
 	stop := make(chan struct{})
 
