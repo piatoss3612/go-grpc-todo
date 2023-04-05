@@ -10,14 +10,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const (
-	UserAgentKey        = "user-agent"
-	GatewayUserAgentKey = "grpcgateway-user-agent"
-	XForwardedForKey    = "x-forwarded-for"
-	ReceivedMsgCountKey = "received-msg-count"
-	SentMsgCountKey     = "sent-msg-count"
-)
-
 type TodoServiceServerInterceptor interface {
 	Unary() grpc.UnaryServerInterceptor
 	Stream() grpc.StreamServerInterceptor
@@ -63,7 +55,6 @@ func (i *interceptor) Unary() grpc.UnaryServerInterceptor {
 func (i *interceptor) Stream() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 		start := time.Now()
-		wss := newWrappedServerStream(ss)
 
 		defer func() {
 			if err != nil {
@@ -78,18 +69,14 @@ func (i *interceptor) Stream() grpc.StreamServerInterceptor {
 				return
 			}
 
-			ctx := wss.Context()
-			rmc, smc := ctx.Value(ReceivedMsgCountKey).(int), ctx.Value(SentMsgCountKey).(int)
-
-			slog.Info("Request handled successfully", "method", info.FullMethod,
-				ReceivedMsgCountKey, rmc, SentMsgCountKey, smc, "duration", time.Since(start).String())
+			slog.Info("Request handled successfully", "method", info.FullMethod, "duration", time.Since(start).String())
 		}()
 
 		md := extractMetadata(ss.Context())
 
 		slog.Info("Request received", "method", info.FullMethod, "user-agent", md.userAgent, "client-ip", md.clientIp)
 
-		return handler(srv, wss)
+		return handler(srv, ss)
 	}
 }
 
@@ -141,34 +128,4 @@ func (i *interceptor) DeleteAll(ctx context.Context, req *todo.Empty) (resp *tod
 		// TODO: send event to event bus
 	}()
 	return i.srv.DeleteAll(ctx, req)
-}
-
-type wrappedServerStream struct {
-	grpc.ServerStream
-	recvMsgCount int
-	sentMsgCount int
-}
-
-func newWrappedServerStream(ss grpc.ServerStream) grpc.ServerStream {
-	return &wrappedServerStream{
-		ServerStream: ss,
-		recvMsgCount: 0,
-		sentMsgCount: 0,
-	}
-}
-
-func (w *wrappedServerStream) SendMsg(m interface{}) error {
-	w.sentMsgCount++
-	return w.ServerStream.SendMsg(m)
-}
-
-func (w *wrappedServerStream) RecvMsg(m interface{}) error {
-	w.recvMsgCount++
-	return w.ServerStream.RecvMsg(m)
-}
-
-func (w *wrappedServerStream) Context() context.Context {
-	ctx := context.WithValue(w.ServerStream.Context(), ReceivedMsgCountKey, w.recvMsgCount)
-	ctx = context.WithValue(ctx, SentMsgCountKey, w.sentMsgCount)
-	return ctx
 }

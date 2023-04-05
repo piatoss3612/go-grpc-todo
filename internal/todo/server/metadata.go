@@ -7,12 +7,18 @@ import (
 	"google.golang.org/grpc/peer"
 )
 
-type todoServerMetadata struct {
+const (
+	UserAgentKey        = "user-agent"
+	GatewayUserAgentKey = "grpcgateway-user-agent"
+	XForwardedForKey    = "x-forwarded-for"
+)
+
+type todoServiceServerMetadata struct {
 	userAgent string
 	clientIp  string
 }
 
-func extractMetadata(ctx context.Context) todoServerMetadata {
+func extractMetadata(ctx context.Context) todoServiceServerMetadata {
 	var userAgent, clientIp string
 
 	if md, ok := metadata.FromIncomingContext(ctx); ok {
@@ -34,5 +40,5 @@ func extractMetadata(ctx context.Context) todoServerMetadata {
 		}
 	}
 
-	return todoServerMetadata{userAgent: userAgent, clientIp: clientIp}
+	return todoServiceServerMetadata{userAgent: userAgent, clientIp: clientIp}
 }
