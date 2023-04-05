@@ -1,0 +1,9 @@
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "./todo/query.sql"
+    schema: "./todo/schema.sql"
+    gen:
+      go:
+        package: "todo"
+        out: "todo"

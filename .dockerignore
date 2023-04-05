@@ -1,4 +1,4 @@
-db
+db/data
 node_modules
 Makefile
 README.md
