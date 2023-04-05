@@ -4,8 +4,8 @@ services:
   grpc-server:
     container_name: grpc-server
     build:
-      context: ./build/server
-      dockerfile: server.Dockerfile
+      context: .
+      dockerfile: ./build/server/Dockerfile
     command: ./app/server -p 80
     restart: always
     deploy:
@@ -25,8 +25,8 @@ services:
   proxy-server:
     container_name: proxy-server
     build:
-      context: ./build/proxy
-      dockerfile: proxy.Dockerfile
+      context: .
+      dockerfile: ./build/proxy/Dockerfile
     command: ./app/proxy -p 80 -e grpc-server:80
     restart: always
     deploy:

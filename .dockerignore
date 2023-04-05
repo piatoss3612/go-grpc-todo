@@ -1,0 +1,7 @@
+db
+node_modules
+Makefile
+README.md
+.git
+.gitignore
+.dockerignore
