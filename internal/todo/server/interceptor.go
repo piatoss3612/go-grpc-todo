@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/piatoss3612/go-grpc-todo/internal/event"
-	tdevt "github.com/piatoss3612/go-grpc-todo/internal/todo/event"
+	te "github.com/piatoss3612/go-grpc-todo/internal/todo/event"
 	"github.com/piatoss3612/go-grpc-todo/proto/gen/go/todo/v1"
 	"golang.org/x/exp/slog"
 	"google.golang.org/grpc"
@@ -84,86 +84,102 @@ func (i *interceptor) Stream() grpc.StreamServerInterceptor {
 
 func (i *interceptor) Add(ctx context.Context, req *todo.AddRequest) (resp *todo.AddResponse, err error) {
 	defer func() {
-		var evt event.Event
 		if err != nil {
-			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoError, err)
-		} else {
-			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoCreated, resp.String())
+			_ = i.publishError(ctx, err)
+			return
 		}
-		_ = i.pub.Publish(ctx, evt)
+		_ = i.publishEvent(ctx, te.EventTopicTodoCreated, resp.String())
 	}()
 	return i.srv.Add(ctx, req)
 }
 
 func (i *interceptor) AddMany(stream todo.TodoService_AddManyServer) (err error) {
 	defer func() {
-		var evt event.Event
 		if err != nil {
-			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoError, err)
-		} else {
-			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoCreated, "Added many todos")
+			_ = i.publishError(stream.Context(), err)
+			return
 		}
-		_ = i.pub.Publish(stream.Context(), evt)
+		_ = i.publishEvent(stream.Context(), te.EventTopicTodoCreated, "Added many todos")
 	}()
 	return i.srv.AddMany(stream)
 }
 
 func (i *interceptor) Get(ctx context.Context, req *todo.GetRequest) (resp *todo.Todo, err error) {
+	defer func() {
+		if err != nil {
+			_ = i.publishError(ctx, err)
+		}
+	}()
 	return i.srv.Get(ctx, req)
 }
 
 func (i *interceptor) GetAll(req *todo.Empty, stream todo.TodoService_GetAllServer) (err error) {
+	defer func() {
+		if err != nil {
+			_ = i.publishError(stream.Context(), err)
+		}
+	}()
 	return i.srv.GetAll(req, stream)
 }
 
 func (i *interceptor) Update(ctx context.Context, req *todo.UpdateRequest) (resp *todo.UpdateResponse, err error) {
 	defer func() {
-		var evt event.Event
 		if err != nil {
-			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoError, err)
-		} else {
-			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoUpdated, resp.String())
+			_ = i.publishError(ctx, err)
+			return
 		}
-		_ = i.pub.Publish(ctx, evt)
+		_ = i.publishEvent(ctx, te.EventTopicTodoUpdated, resp.String())
 	}()
 	return i.srv.Update(ctx, req)
 }
 
 func (i *interceptor) UpdateMany(stream todo.TodoService_UpdateManyServer) (err error) {
 	defer func() {
-		var evt event.Event
 		if err != nil {
-			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoError, err)
-		} else {
-			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoUpdated, "Updated many todos")
+			_ = i.publishError(stream.Context(), err)
+			return
 		}
-		_ = i.pub.Publish(stream.Context(), evt)
+		_ = i.publishEvent(stream.Context(), te.EventTopicTodoUpdated, "Updated many todos")
 	}()
 	return i.srv.UpdateMany(stream)
 }
 
 func (i *interceptor) Delete(ctx context.Context, req *todo.DeleteRequest) (resp *todo.DeleteResponse, err error) {
 	defer func() {
-		var evt event.Event
 		if err != nil {
-			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoError, err)
-		} else {
-			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoDeleted, resp.String())
+			_ = i.publishError(ctx, err)
+			return
 		}
-		_ = i.pub.Publish(ctx, evt)
+		_ = i.publishEvent(ctx, te.EventTopicTodoDeleted, resp.String())
 	}()
 	return i.srv.Delete(ctx, req)
 }
 
 func (i *interceptor) DeleteAll(ctx context.Context, req *todo.Empty) (resp *todo.DeleteAllResponse, err error) {
 	defer func() {
-		var evt event.Event
 		if err != nil {
-			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoError, err)
-		} else {
-			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoDeleted, "Deleted all todos")
+			_ = i.publishError(ctx, err)
+			return
 		}
-		_ = i.pub.Publish(ctx, evt)
+		_ = i.publishEvent(ctx, te.EventTopicTodoDeleted, "Deleted all todos")
 	}()
 	return i.srv.DeleteAll(ctx, req)
+}
+
+func (i *interceptor) publishEvent(ctx context.Context, topic te.EventTopic, data interface{}) error {
+	evt, _ := te.NewTodoEvent(topic, data)
+	return i.pub.Publish(ctx, evt)
+}
+
+func (i *interceptor) publishError(ctx context.Context, err error) error {
+	var msg string
+
+	s, ok := status.FromError(err)
+	if ok {
+		msg = s.Message()
+	} else {
+		msg = err.Error()
+	}
+
+	return i.publishEvent(ctx, te.EventTopicTodoError, msg)
 }
