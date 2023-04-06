@@ -19,6 +19,8 @@ services:
       - DB_NAME=todo
       - DB_SSLMODE=disable
       - DB_TIMEZONE=UTC
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - RABBITMQ_EXCHANGE=todo
     depends_on:
       - postgres
       - rabbitmq

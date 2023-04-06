@@ -57,5 +57,5 @@ func (e *TodoEvent) Topic() string {
 }
 
 func (e *TodoEvent) String() string {
-	return fmt.Sprintf("%s: %v", e.T, e.V)
+	return fmt.Sprintf("%s - %v", e.T, e.V)
 }

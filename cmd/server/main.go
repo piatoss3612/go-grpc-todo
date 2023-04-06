@@ -12,6 +12,7 @@ import (
 
 	"github.com/piatoss3612/go-grpc-todo/db"
 	repository "github.com/piatoss3612/go-grpc-todo/db/todo"
+	"github.com/piatoss3612/go-grpc-todo/internal/todo/event"
 	"github.com/piatoss3612/go-grpc-todo/internal/todo/server"
 	"github.com/piatoss3612/go-grpc-todo/proto/gen/go/todo/v1"
 	"golang.org/x/exp/slog"
@@ -40,9 +41,19 @@ func main() {
 
 	repo := repository.NewRepository(db)
 
+	rabbit := <-event.RedialRabbitmq(os.Getenv("RABBITMQ_URL"), 5, 5*time.Second)
+	if rabbit == nil {
+		log.Fatalf("failed to connect to RabbitMQ")
+	}
+
+	pub, err := event.NewPublisher(rabbit, os.Getenv("RABBITMQ_EXCHANGE"))
+	if err != nil {
+		log.Fatalf("failed to create publisher: %v", err)
+	}
+
 	srv := server.New(repo)
 
-	itc := server.NewInterceptor(srv, nil)
+	itc := server.NewInterceptor(srv, pub)
 
 	slog.Info("Starting Todo gRPC Server")
 
