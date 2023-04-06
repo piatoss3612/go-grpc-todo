@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/piatoss3612/go-grpc-todo/internal/event"
+	tdevt "github.com/piatoss3612/go-grpc-todo/internal/todo/event"
 	"github.com/piatoss3612/go-grpc-todo/proto/gen/go/todo/v1"
 	"golang.org/x/exp/slog"
 	"google.golang.org/grpc"
@@ -18,11 +20,11 @@ type TodoServiceServerInterceptor interface {
 
 type interceptor struct {
 	srv todo.TodoServiceServer
-	// TODO: add event bus
+	pub event.Publisher
 }
 
-func NewInterceptor(srv todo.TodoServiceServer) TodoServiceServerInterceptor {
-	return &interceptor{srv: srv}
+func NewInterceptor(srv todo.TodoServiceServer, pub event.Publisher) TodoServiceServerInterceptor {
+	return &interceptor{srv: srv, pub: pub}
 }
 
 func (i *interceptor) Unary() grpc.UnaryServerInterceptor {
@@ -82,14 +84,26 @@ func (i *interceptor) Stream() grpc.StreamServerInterceptor {
 
 func (i *interceptor) Add(ctx context.Context, req *todo.AddRequest) (resp *todo.AddResponse, err error) {
 	defer func() {
-		// TODO: send event to event bus
+		var evt event.Event
+		if err != nil {
+			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoError, err)
+		} else {
+			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoCreated, resp.String())
+		}
+		_ = i.pub.Publish(ctx, evt)
 	}()
 	return i.srv.Add(ctx, req)
 }
 
 func (i *interceptor) AddMany(stream todo.TodoService_AddManyServer) (err error) {
 	defer func() {
-		// TODO: send event to event bus
+		var evt event.Event
+		if err != nil {
+			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoError, err)
+		} else {
+			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoCreated, "Added many todos")
+		}
+		_ = i.pub.Publish(stream.Context(), evt)
 	}()
 	return i.srv.AddMany(stream)
 }
@@ -104,28 +118,52 @@ func (i *interceptor) GetAll(req *todo.Empty, stream todo.TodoService_GetAllServ
 
 func (i *interceptor) Update(ctx context.Context, req *todo.UpdateRequest) (resp *todo.UpdateResponse, err error) {
 	defer func() {
-		// TODO: send event to event bus
+		var evt event.Event
+		if err != nil {
+			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoError, err)
+		} else {
+			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoUpdated, resp.String())
+		}
+		_ = i.pub.Publish(ctx, evt)
 	}()
 	return i.srv.Update(ctx, req)
 }
 
 func (i *interceptor) UpdateMany(stream todo.TodoService_UpdateManyServer) (err error) {
 	defer func() {
-		// TODO: send event to event bus
+		var evt event.Event
+		if err != nil {
+			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoError, err)
+		} else {
+			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoUpdated, "Updated many todos")
+		}
+		_ = i.pub.Publish(stream.Context(), evt)
 	}()
 	return i.srv.UpdateMany(stream)
 }
 
 func (i *interceptor) Delete(ctx context.Context, req *todo.DeleteRequest) (resp *todo.DeleteResponse, err error) {
 	defer func() {
-		// TODO: send event to event bus
+		var evt event.Event
+		if err != nil {
+			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoError, err)
+		} else {
+			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoDeleted, resp.String())
+		}
+		_ = i.pub.Publish(ctx, evt)
 	}()
 	return i.srv.Delete(ctx, req)
 }
 
 func (i *interceptor) DeleteAll(ctx context.Context, req *todo.Empty) (resp *todo.DeleteAllResponse, err error) {
 	defer func() {
-		// TODO: send event to event bus
+		var evt event.Event
+		if err != nil {
+			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoError, err)
+		} else {
+			evt, _ = tdevt.NewTodoEvent(tdevt.EventTopicTodoDeleted, "Deleted all todos")
+		}
+		_ = i.pub.Publish(ctx, evt)
 	}()
 	return i.srv.DeleteAll(ctx, req)
 }

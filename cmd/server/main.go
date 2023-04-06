@@ -42,7 +42,7 @@ func main() {
 
 	srv := server.New(repo)
 
-	itc := server.NewInterceptor(srv)
+	itc := server.NewInterceptor(srv, nil)
 
 	slog.Info("Starting Todo gRPC Server")
 
