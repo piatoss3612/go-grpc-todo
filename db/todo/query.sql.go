@@ -17,7 +17,7 @@ INSERT INTO todos (id, content, priority) VALUES ($1, $2, $3)
 type AddTodoParams struct {
 	ID       string
 	Content  string
-	Priority int16
+	Priority int32
 }
 
 func (q *Queries) AddTodo(ctx context.Context, arg AddTodoParams) error {
@@ -107,7 +107,7 @@ UPDATE todos SET content = $1, priority = $2, is_done = $3, updated_at = $4 WHER
 
 type UpdateTodoParams struct {
 	Content   string
-	Priority  int16
+	Priority  int32
 	IsDone    bool
 	UpdatedAt time.Time
 	ID        string

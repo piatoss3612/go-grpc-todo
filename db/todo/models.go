@@ -11,7 +11,7 @@ import (
 type Todo struct {
 	ID        string
 	Content   string
-	Priority  int16
+	Priority  int32
 	IsDone    bool
 	CreatedAt time.Time
 	UpdatedAt time.Time
