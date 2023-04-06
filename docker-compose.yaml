@@ -21,6 +21,7 @@ services:
       - DB_TIMEZONE=UTC
     depends_on:
       - postgres
+      - rabbitmq
 
   proxy-server:
     container_name: proxy-server
@@ -61,3 +62,13 @@ services:
     volumes:
       - ./db/data/postgres/:/var/lib/postgresql/data/
       - ./db/todo/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: 'rabbitmq:3.11.13-management'
+    restart: always
+    deploy:
+      mode: replicas
+      replicas: 1
+    ports:
+      - 15672:15672
