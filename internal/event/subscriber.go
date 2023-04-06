@@ -1,6 +1,8 @@
 package event
 
+import "context"
+
 type Subscriber interface {
-	Subscribe(topics []string) (<-chan Event, <-chan error, error)
+	Subscribe(ctx context.Context, topics []string) (<-chan Event, <-chan error, error)
 	Close() error
 }

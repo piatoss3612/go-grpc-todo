@@ -1,6 +1,8 @@
 package event
 
+import "context"
+
 type Publisher interface {
-	Publish(event Event) error
+	Publish(ctx context.Context, event Event) error
 	Close() error
 }
