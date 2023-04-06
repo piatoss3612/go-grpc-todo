@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -11,9 +12,9 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-const MinimumRetry = 5
+const DBConnectMinimumRetry = 5
 
-func LoadPostgresDSN() (string, error) {
+func PostgresDSN() (string, error) {
 	var host, port, user, password, dbname, sslmode, timezone string
 
 	if host = os.Getenv("DB_HOST"); host == "" {
@@ -61,9 +62,9 @@ func ConnectPostgres(dsn string) (*sql.DB, error) {
 	return conn, nil
 }
 
-func ConnectPostgresRetry(dsn string, try int, backOff time.Duration) *sql.DB {
+func MustConnectPostgres(dsn string, try int, backOff time.Duration) *sql.DB {
 	if try <= 0 {
-		try = MinimumRetry
+		try = DBConnectMinimumRetry
 	}
 
 	cnt := 0
@@ -78,7 +79,7 @@ func ConnectPostgresRetry(dsn string, try int, backOff time.Duration) *sql.DB {
 		}
 
 		if cnt >= try {
-			return nil
+			log.Panic("Failed to connect to database", "retry-count", cnt)
 		}
 
 		time.Sleep(backOff)
