@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	repository "github.com/piatoss3612/go-grpc-todo/db/todo"
 	"github.com/piatoss3612/go-grpc-todo/internal/db"
-	"github.com/piatoss3612/go-grpc-todo/internal/repository/postgres"
 	"github.com/piatoss3612/go-grpc-todo/internal/todo/server"
 	"github.com/piatoss3612/go-grpc-todo/proto/gen/go/todo/v1"
 	"golang.org/x/exp/slog"
@@ -35,13 +35,13 @@ func main() {
 		log.Fatalf("failed to get DSN: %v", err)
 	}
 
-	conn := db.ConnectPostgresRetry(dsn, 10, 5*time.Second)
-	if conn == nil {
+	db := db.ConnectPostgresRetry(dsn, 10, 5*time.Second)
+	if db == nil {
 		log.Fatal("failed to connect to database")
 	}
-	defer func() { _ = conn.Close() }()
+	defer func() { _ = db.Close() }()
 
-	repo := postgres.NewTodos(conn)
+	repo := repository.NewRepository(db)
 
 	srv := server.New(repo)
 

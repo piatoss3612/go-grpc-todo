@@ -4,20 +4,22 @@ import (
 	"context"
 	"io"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	"github.com/google/uuid"
-	"github.com/piatoss3612/go-grpc-todo/internal/repository"
+	repository "github.com/piatoss3612/go-grpc-todo/db/todo"
 	"github.com/piatoss3612/go-grpc-todo/proto/gen/go/todo/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type server struct {
-	repo repository.Todos
+	repo repository.Repository
 }
 
-func New(repo repository.Todos) todo.TodoServiceServer {
+func New(repo repository.Repository) todo.TodoServiceServer {
 	return &server{repo: repo}
 }
 
@@ -30,61 +32,64 @@ func (s *server) Add(ctx context.Context, req *todo.AddRequest) (*todo.AddRespon
 		req.Priority = 0
 	}
 
-	tx, err := s.repo.BeginTx(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to begin transaction: %v", err)
-	}
-	defer func() { tx.Rollback(ctx) }()
+	id := uuid.New().String()
 
-	id, err := tx.Add(ctx, req.Content, req.Priority)
-	if err != nil {
+	tx := func(q repository.Querier) error {
+		return q.AddTodo(ctx, repository.AddTodoParams{
+			ID:       id,
+			Content:  req.Content,
+			Priority: int32(req.Priority),
+		})
+	}
+
+	if err := s.repo.ExecTx(ctx, tx); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to add todo: %v", err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to commit transaction: %v", err)
 	}
 
 	return &todo.AddResponse{Id: id}, nil
 }
 
 func (s *server) AddMany(stream todo.TodoService_AddManyServer) error {
-	tx, err := s.repo.BeginTx(stream.Context())
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to begin transaction: %v", err)
-	}
-	defer func() { tx.Rollback(stream.Context()) }()
-
-	for {
-		req, err := stream.Recv()
-		if err != nil {
-			if err == io.EOF {
-				err = tx.Commit(stream.Context())
-				if err != nil {
-					return status.Errorf(codes.Internal, "failed to commit transaction: %v", err)
+	tx := func(q repository.Querier) error {
+		for {
+			req, err := stream.Recv()
+			if err != nil {
+				if err == io.EOF {
+					return nil
 				}
-				return nil
+				return status.Errorf(codes.Internal, "failed to receive request: %v", err)
 			}
-			return status.Errorf(codes.Internal, "failed to receive request: %v", err)
-		}
 
-		if strings.TrimSpace(req.Content) == "" || utf8.RuneCountInString(req.Content) > 255 {
-			return status.Errorf(codes.InvalidArgument, "invalid content: %s", req.Content)
-		}
+			if strings.TrimSpace(req.Content) == "" || utf8.RuneCountInString(req.Content) > 255 {
+				return status.Errorf(codes.InvalidArgument, "invalid content: %s", req.Content)
+			}
 
-		if req.Priority < 1 || req.Priority > 5 {
-			req.Priority = 0
-		}
+			if req.Priority < 1 || req.Priority > 5 {
+				req.Priority = 0
+			}
 
-		id, err := tx.Add(stream.Context(), req.Content, req.Priority)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to add todo: %v", err)
-		}
+			id := uuid.New().String()
 
-		if err := stream.Send(&todo.AddResponse{Id: id}); err != nil {
-			return status.Errorf(codes.Internal, "failed to send response: %v", err)
+			err = q.AddTodo(stream.Context(), repository.AddTodoParams{
+				ID:       id,
+				Content:  req.Content,
+				Priority: int32(req.Priority),
+			})
+			if err != nil {
+				return status.Errorf(codes.Internal, "failed to add todo: %v", err)
+			}
+
+			if err := stream.Send(&todo.AddResponse{Id: id}); err != nil {
+				return status.Errorf(codes.Internal, "failed to send response: %v", err)
+			}
 		}
 	}
+
+	if err := s.repo.ExecTx(stream.Context(), tx); err != nil {
+		return status.Errorf(codes.Internal, "failed to add todos: %v", err)
+	}
+
+	return nil
 }
 
 func (s *server) Get(ctx context.Context, req *todo.GetRequest) (*todo.Todo, error) {
@@ -93,22 +98,40 @@ func (s *server) Get(ctx context.Context, req *todo.GetRequest) (*todo.Todo, err
 		return nil, status.Errorf(codes.InvalidArgument, "invalid id: %s", req.Id)
 	}
 
-	todos, err := s.repo.Get(ctx, req.Id)
+	t, err := s.repo.GetTodo(ctx, req.Id)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get todo: %v", err)
 	}
 
-	return todos, nil
+	resp := &todo.Todo{
+		Id:        t.ID,
+		Content:   t.Content,
+		Priority:  todo.Priority(t.Priority),
+		IsDone:    t.IsDone,
+		CreatedAt: timestamppb.New(t.CreatedAt),
+		UpdatedAt: timestamppb.New(t.UpdatedAt),
+	}
+
+	return resp, nil
 }
 
 func (s *server) GetAll(_ *todo.Empty, stream todo.TodoService_GetAllServer) error {
-	todos, err := s.repo.GetAll(stream.Context())
+	result, err := s.repo.GetTodos(stream.Context())
 	if err != nil {
 		return status.Errorf(codes.Internal, "failed to get all todos: %v", err)
 	}
 
-	for _, todo := range todos {
-		if err := stream.Send(todo); err != nil {
+	for _, item := range result {
+		t := &todo.Todo{
+			Id:        item.ID,
+			Content:   item.Content,
+			Priority:  todo.Priority(item.Priority),
+			IsDone:    item.IsDone,
+			CreatedAt: timestamppb.New(item.CreatedAt),
+			UpdatedAt: timestamppb.New(item.UpdatedAt),
+		}
+
+		if err := stream.Send(t); err != nil {
 			return status.Errorf(codes.Internal, "failed to send todo: %v", err)
 		}
 	}
@@ -117,105 +140,145 @@ func (s *server) GetAll(_ *todo.Empty, stream todo.TodoService_GetAllServer) err
 }
 
 func (s *server) Update(ctx context.Context, req *todo.UpdateRequest) (*todo.UpdateResponse, error) {
-	tx, err := s.repo.BeginTx(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to begin transaction: %v", err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	_, err = uuid.Parse(req.Id)
+	_, err := uuid.Parse(req.Id)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid id: %s", req.Id)
 	}
 
-	affected, err := tx.Update(ctx, req.Id, req.Content, req.Priority, req.IsDone)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to update todo: %v", err)
+	var affected int64
+
+	tx := func(q repository.Querier) error {
+		t, err := q.GetTodo(ctx, req.Id)
+		if err != nil {
+			return err
+		}
+
+		if strings.TrimSpace(req.Content) == "" {
+			req.Content = t.Content
+		}
+
+		if req.Priority < 1 || req.Priority > 5 {
+			req.Priority = 0
+		}
+
+		result, err := q.UpdateTodo(ctx, repository.UpdateTodoParams{
+			ID:        req.Id,
+			Content:   req.Content,
+			Priority:  int32(req.Priority),
+			IsDone:    req.IsDone,
+			UpdatedAt: time.Now(),
+		})
+		if err != nil {
+			return err
+		}
+
+		affected = result
+
+		return nil
 	}
 
-	if err := tx.Commit(ctx); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to commit transaction: %v", err)
+	if err := s.repo.ExecTx(ctx, tx); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to update todo: %v", err)
 	}
 
 	return &todo.UpdateResponse{Affected: affected}, nil
 }
 
 func (s *server) UpdateMany(stream todo.TodoService_UpdateManyServer) error {
-	tx, err := s.repo.BeginTx(stream.Context())
-	if err != nil {
-		return status.Errorf(codes.Internal, "failed to begin transaction: %v", err)
-	}
-	defer func() { tx.Rollback(stream.Context()) }()
-
 	var totalAffected int64 = 0
 
-	for {
-		req, err := stream.Recv()
-		if err != nil {
-			if err == io.EOF {
-				break
+	tx := func(q repository.Querier) error {
+		for {
+			req, err := stream.Recv()
+			if err != nil {
+				if err == io.EOF {
+					return nil
+				}
+				return err
 			}
-			return err
-		}
 
-		_, err = uuid.Parse(req.Id)
-		if err != nil {
-			return status.Errorf(codes.InvalidArgument, "invalid id: %s", req.Id)
-		}
+			_, err = uuid.Parse(req.Id)
+			if err != nil {
+				return status.Errorf(codes.InvalidArgument, "invalid id: %s", req.Id)
+			}
 
-		affected, err := tx.Update(stream.Context(), req.Id, req.Content, req.Priority, req.IsDone)
-		if err != nil {
-			return status.Errorf(codes.Internal, "failed to update todo: %v", err)
-		}
+			t, err := q.GetTodo(stream.Context(), req.Id)
+			if err != nil {
+				return err
+			}
 
-		totalAffected += affected
+			if strings.TrimSpace(req.Content) == "" {
+				req.Content = t.Content
+			}
+
+			if req.Priority < 1 || req.Priority > 5 {
+				req.Priority = 0
+			}
+
+			result, err := q.UpdateTodo(stream.Context(), repository.UpdateTodoParams{
+				ID:        req.Id,
+				Content:   req.Content,
+				Priority:  int32(req.Priority),
+				IsDone:    req.IsDone,
+				UpdatedAt: time.Now(),
+			})
+			if err != nil {
+				return err
+			}
+
+			totalAffected += result
+		}
 	}
 
-	if err := tx.Commit(stream.Context()); err != nil {
-		return status.Errorf(codes.Internal, "failed to commit transaction: %v", err)
+	if err := s.repo.ExecTx(stream.Context(), tx); err != nil {
+		return status.Errorf(codes.Internal, "failed to update todos: %v", err)
 	}
 
 	return stream.SendAndClose(&todo.UpdateManyResponse{Affected: totalAffected})
 }
 
 func (s *server) Delete(ctx context.Context, req *todo.DeleteRequest) (*todo.DeleteResponse, error) {
-	tx, err := s.repo.BeginTx(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to begin transaction: %v", err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	_, err = uuid.Parse(req.Id)
+	_, err := uuid.Parse(req.Id)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "invalid id: %s", req.Id)
 	}
 
-	affected, err := tx.Delete(ctx, req.Id)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to delete todo: %v", err)
+	var affected int64
+
+	tx := func(q repository.Querier) error {
+		result, err := q.DeleteTodo(ctx, req.Id)
+		if err != nil {
+			return err
+		}
+
+		affected = result
+
+		return nil
 	}
 
-	if err := tx.Commit(ctx); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to commit transaction: %v", err)
+	if err := s.repo.ExecTx(ctx, tx); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to delete todo: %v", err)
 	}
 
 	return &todo.DeleteResponse{Affected: affected}, nil
 }
 
 func (s *server) DeleteAll(ctx context.Context, _ *todo.Empty) (*todo.DeleteAllResponse, error) {
-	tx, err := s.repo.BeginTx(ctx)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to begin transaction: %v", err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	var affected int64
 
-	affected, err := tx.DeleteAll(ctx)
-	if err != nil {
+	tx := func(q repository.Querier) error {
+		result, err := q.DeleteTodos(ctx)
+		if err != nil {
+			return err
+		}
+
+		affected = result
+
+		return nil
+	}
+
+	if err := s.repo.ExecTx(ctx, tx); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete all todos: %v", err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to commit transaction: %v", err)
 	}
 
 	return &todo.DeleteAllResponse{Affected: affected}, nil
