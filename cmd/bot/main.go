@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/bwmarrin/discordgo"
 	"github.com/piatoss3612/go-grpc-todo/internal/todo/event"
 	"golang.org/x/exp/slog"
 )
@@ -33,6 +34,20 @@ func main() {
 	}
 	defer func() { _ = sub.Close() }()
 
+	session, err := discordgo.New("Bot " + os.Getenv("DISCORD_TOKEN"))
+	if err != nil {
+		log.Fatalf("failed to create discord session: %v", err)
+	}
+	defer func() { _ = session.Close() }()
+
+	chanID := os.Getenv("DISCORD_CHANNEL_ID")
+
+	session.Identify.Intents = discordgo.IntentGuilds | discordgo.IntentGuildMessages
+
+	if err := session.Open(); err != nil {
+		log.Fatalf("failed to open discord session: %v", err)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -53,12 +68,18 @@ func main() {
 				if e == nil {
 					continue
 				}
-				slog.Info("Received event", "event", e)
+				_, err = session.ChannelMessageSend(chanID, e.String())
+				if err != nil {
+					slog.Error("failed to send message", "error", err)
+				}
 			case err := <-errs:
 				if err == nil {
 					continue
 				}
-				slog.Error("Received error", "error", err)
+				_, err = session.ChannelMessageSend(chanID, err.Error())
+				if err != nil {
+					slog.Error("failed to send error message", "error", err)
+				}
 			}
 		}
 	}()

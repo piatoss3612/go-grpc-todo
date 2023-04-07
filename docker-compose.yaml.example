@@ -64,6 +64,8 @@ services:
       - RABBITMQ_EXCHANGE=todo
       - RABBITMQ_QUEUE=bot
       - RABBITMQ_TOPICS=todo.created,todo.updated,todo.deleted,todo.error
+      - DISCORD_TOKEN=
+      - DISCORD_CHANNEL_ID=
     depends_on:
       - grpc-server
 
