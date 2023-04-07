@@ -23,6 +23,7 @@ func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout)).With("service", "discord-bot"))
 
 	cfg := config.NewBot()
+
 	if err := cfg.Validate(); err != nil {
 		log.Fatalf("invalid bot config: %v", err)
 	}

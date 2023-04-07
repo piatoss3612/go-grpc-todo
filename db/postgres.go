@@ -2,52 +2,13 @@ package db
 
 import (
 	"database/sql"
-	"errors"
-	"fmt"
-	"log"
-	"os"
 	"time"
 
 	_ "github.com/lib/pq"
 	"golang.org/x/exp/slog"
 )
 
-const DBConnectMinimumRetry = 5
-
-func PostgresDSN() (string, error) {
-	var host, port, user, password, dbname, sslmode, timezone string
-
-	if host = os.Getenv("DB_HOST"); host == "" {
-		return "", errors.New("DB_HOST is not set")
-	}
-
-	if port = os.Getenv("DB_PORT"); port == "" {
-		return "", errors.New("DB_PORT is not set")
-	}
-
-	if user = os.Getenv("DB_USER"); user == "" {
-		return "", errors.New("DB_USER is not set")
-	}
-
-	if password = os.Getenv("DB_PASSWORD"); password == "" {
-		return "", errors.New("DB_PASSWORD is not set")
-	}
-
-	if dbname = os.Getenv("DB_NAME"); dbname == "" {
-		return "", errors.New("DB_NAME is not set")
-	}
-
-	if sslmode = os.Getenv("DB_SSLMODE"); sslmode == "" {
-		sslmode = "disable"
-	}
-
-	if timezone = os.Getenv("DB_TIMEZONE"); timezone == "" {
-		timezone = "UTC"
-	}
-
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s timezone=%s connect_timeout=5",
-		host, port, user, password, dbname, sslmode, timezone), nil
-}
+const MinRedials = 5
 
 func ConnectPostgres(dsn string) (*sql.DB, error) {
 	conn, err := sql.Open("postgres", dsn)
@@ -62,26 +23,27 @@ func ConnectPostgres(dsn string) (*sql.DB, error) {
 	return conn, nil
 }
 
-func MustConnectPostgres(dsn string, try int, backOff time.Duration) *sql.DB {
-	if try <= 0 {
-		try = DBConnectMinimumRetry
-	}
+func RedialPostgres(dsn string, redials int, redialInterval time.Duration) <-chan *sql.DB {
+	connCh := make(chan *sql.DB, 1)
 
-	cnt := 0
-
-	for {
-		conn, err := ConnectPostgres(dsn)
-		if err != nil {
-			cnt++
-		} else {
-			slog.Info("Connected to database", "retry-count", cnt)
-			return conn
+	go func() {
+		if redials <= 0 {
+			redials = MinRedials
 		}
 
-		if cnt >= try {
-			log.Panic("Failed to connect to database", "retry-count", cnt)
-		}
+		for i := 0; i < redials; i++ {
+			conn, err := ConnectPostgres(dsn)
+			if err != nil {
+				slog.Warn("Failed to connect to database, backing off", "err", err, "dial-count", i+1)
+				time.Sleep(redialInterval)
+				continue
+			}
 
-		time.Sleep(backOff)
-	}
+			slog.Info("Connected to database", "dial-count", i+1)
+			connCh <- conn
+			return
+		}
+	}()
+
+	return connCh
 }
