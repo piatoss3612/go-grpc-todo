@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
@@ -18,16 +19,18 @@ type Bot interface {
 }
 
 type bot struct {
-	ss     *discordgo.Session
-	sub    event.Subscriber
-	chanID string
+	ss          *discordgo.Session
+	sub         event.Subscriber
+	eventChanID string
+	errChanID   string
 }
 
-func New(ss *discordgo.Session, sub event.Subscriber, chanID string) Bot {
+func New(ss *discordgo.Session, sub event.Subscriber, eventChanID, errChanID string) Bot {
 	return &bot{
-		ss:     ss,
-		sub:    sub,
-		chanID: chanID,
+		ss:          ss,
+		sub:         sub,
+		eventChanID: eventChanID,
+		errChanID:   errChanID,
 	}
 }
 
@@ -69,12 +72,29 @@ func (b *bot) Subscribe(ctx context.Context, topics []string) error {
 				slog.Info("Context done: terminating subscriber")
 				return
 			case e := <-events:
-				_, err := b.ss.ChannelMessageSend(b.chanID, e.String())
+				topicFields := strings.Split(e.Topic(), ".")
+
+				var chanID string
+				var embed *discordgo.MessageEmbed
+
+				if len(topicFields) > 1 && topicFields[1] == "error" {
+					chanID = b.errChanID
+					embed = NewErrorEmbed(e.String())
+				} else {
+					chanID = b.eventChanID
+					embed = NewTodoEventEmbed(e.Topic(), e.String())
+				}
+
+				_, err := b.ss.ChannelMessageSendEmbed(chanID, embed)
 				if err != nil {
 					slog.Error("failed to send message", "error", err)
 				}
 			case err := <-errs:
-				_, err = b.ss.ChannelMessageSend(b.chanID, err.Error())
+				if err == nil {
+					continue
+				}
+
+				_, err = b.ss.ChannelMessageSendEmbed(b.errChanID, NewErrorEmbed(err.Error()))
 				if err != nil {
 					slog.Error("failed to send message", "error", err)
 				}

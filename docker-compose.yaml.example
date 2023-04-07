@@ -65,7 +65,8 @@ services:
       - RABBITMQ_QUEUE=bot
       - RABBITMQ_TOPICS=todo.created,todo.updated,todo.deleted,todo.error
       - DISCORD_TOKEN=
-      - DISCORD_CHANNEL_ID=
+      - DISCORD_EVENT_CHANNEL_ID=
+      - DISCORD_ERROR_CHANNEL_ID=
     depends_on:
       - grpc-server
 

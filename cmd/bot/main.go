@@ -38,7 +38,8 @@ func main() {
 	defer func() { _ = sub.Close() }()
 
 	botToken := os.Getenv("DISCORD_TOKEN")
-	chanID := os.Getenv("DISCORD_CHANNEL_ID")
+	eventChanID := os.Getenv("DISCORD_EVENT_CHANNEL_ID")
+	errChanID := os.Getenv("DISCORD_ERROR_CHANNEL_ID")
 	topics := strings.Split(os.Getenv("RABBITMQ_TOPICS"), ",")
 
 	session, err := discordgo.New("Bot " + botToken)
@@ -48,7 +49,7 @@ func main() {
 
 	session.Identify.Intents = discordgo.IntentGuilds | discordgo.IntentGuildMessages
 
-	bot := bot.New(session, sub, chanID)
+	bot := bot.New(session, sub, eventChanID, errChanID)
 
 	stop, err := bot.Open()
 	if err != nil {
