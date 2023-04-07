@@ -50,6 +50,23 @@ services:
       mode: replicated
       replicas: 1
 
+  bot:
+    container_name: bot
+    build:
+      context: .
+      dockerfile: ./build/bot/Dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - RABBITMQ_EXCHANGE=todo
+      - RABBITMQ_QUEUE=bot
+      - RABBITMQ_TOPICS=todo.created,todo.updated,todo.deleted,todo.error
+    depends_on:
+      - grpc-server
+
   postgres:
     container_name: postgres
     image: 'postgres:15.2'
