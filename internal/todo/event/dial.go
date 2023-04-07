@@ -7,25 +7,26 @@ import (
 	"golang.org/x/exp/slog"
 )
 
-const MinRedialCount = 5
+const MinRedials = 5
 
-func RedialRabbitmq(url string, redialCount int, redialInterval time.Duration) <-chan *amqp.Connection {
+func RedialRabbitmq(url string, redials int, redialInterval time.Duration) <-chan *amqp.Connection {
 	connCh := make(chan *amqp.Connection, 1)
 	go func() {
 		defer close(connCh)
 
-		if redialCount <= 0 {
-			redialCount = MinRedialCount
+		if redials <= 0 {
+			redials = MinRedials
 		}
 
-		for i := 0; i < redialCount; i++ {
+		for i := 0; i < redials; i++ {
 			conn, err := amqp.Dial(url)
 			if err != nil {
+				slog.Warn("Failed to connect to RabbitMQ, backing off", "err", err, "dial-count", i+1)
 				time.Sleep(redialInterval)
 				continue
 			}
 
-			slog.Info("Connected to RabbitMQ", "redialCount", i)
+			slog.Info("Connected to RabbitMQ", "dial-count", i+1)
 			connCh <- conn
 			return
 		}
