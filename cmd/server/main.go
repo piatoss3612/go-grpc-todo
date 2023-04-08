@@ -1,21 +1,27 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/piatoss3612/go-grpc-todo/db"
 	repository "github.com/piatoss3612/go-grpc-todo/db/todo"
 	"github.com/piatoss3612/go-grpc-todo/internal/config"
 	"github.com/piatoss3612/go-grpc-todo/internal/todo/event"
 	"github.com/piatoss3612/go-grpc-todo/internal/todo/server"
 	"github.com/piatoss3612/go-grpc-todo/proto/gen/go/todo/v1"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"golang.org/x/exp/slog"
 	"google.golang.org/grpc"
 )
@@ -84,6 +90,31 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(collectors.NewGoCollector())
+
+	infoMetric := prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "todo",
+			Name:      "info",
+			Help:      "Info about the server",
+		},
+		[]string{"version"},
+	)
+	infoMetric.With(prometheus.Labels{"version": "1.0.0"}).Set(1)
+	reg.MustRegister(infoMetric)
+
+	mux := chi.NewRouter()
+	mux.Mount("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
+
+	metricsSrv := http.Server{
+		Handler: mux,
+	}
+
+	go func() {
+		_ = metricsSrv.Serve(lis)
+	}()
+
 	go func() {
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("failed to serve: %v", err)
@@ -93,6 +124,7 @@ func main() {
 	go func() {
 		<-gracefulShutdown
 		s.GracefulStop()
+		_ = metricsSrv.Shutdown(context.Background())
 		close(gracefulShutdown)
 		close(stop)
 		slog.Info("Server stopped")
