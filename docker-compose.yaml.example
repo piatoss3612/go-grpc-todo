@@ -95,3 +95,22 @@ services:
     ports:
       - 5672:5672
       - 15672:15672
+
+  prometheus:
+    container_name: prometheus
+    image: 'prom/prometheus:v2.43.0'
+    ports:
+      - 9090:9090
+    volumes:
+      - ./docs/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+  
+  grafana:
+    container_name: grafana
+    image: 'grafana/grafana:8.5.22'
+    environment:
+      - GF_SECURITY_ADMIN_USER=
+      - GF_SECURITY_ADMIN_PASSWORD=
+    ports:
+      - 3000:3000
+    volumes:
+      - ./docs/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
